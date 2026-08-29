@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
+import { submitOrderAction } from "@/app/actions/orders";
 import {
   availableSizes,
   getProductsForUniversity,
@@ -22,8 +23,7 @@ import {
 import { formatThb } from "@/lib/format";
 import {
   type CheckoutDetails,
-  type ConfirmedOrder,
-  submitMockOrder
+  type ConfirmedOrder
 } from "@/lib/orders";
 import {
   calculateOrderTotals,
@@ -85,6 +85,8 @@ export function StorefrontApp() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [slipFile, setSlipFile] = useState<File | null>(null);
   const [slipError, setSlipError] = useState("");
+  const [submissionError, setSubmissionError] = useState("");
+  const [submissionKey, setSubmissionKey] = useState(createSubmissionKey);
   const [order, setOrder] = useState<ConfirmedOrder | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -104,6 +106,8 @@ export function StorefrontApp() {
       setCartItems([]);
       setSlipFile(null);
       setOrder(null);
+      setSubmissionError("");
+      setSubmissionKey(createSubmissionKey());
     }
 
     setSelectedUniversityId(universityId);
@@ -171,6 +175,7 @@ export function StorefrontApp() {
 
   function selectSlip(file: File | null) {
     setSlipError("");
+    setSubmissionError("");
     setSlipFile(null);
 
     if (!file) {
@@ -188,23 +193,53 @@ export function StorefrontApp() {
   }
 
   async function confirmOrder() {
-    if (!selectedUniversityId || !slipFile || cartItems.length === 0) {
+    if (!selectedUniversityId || !slipFile || cartItems.length === 0 || isSubmitting) {
       return;
     }
 
     setIsSubmitting(true);
-    const submittedOrder = await submitMockOrder({
-      universityId: selectedUniversityId,
-      items: cartItems,
-      checkout,
-      itemSubtotalThb: totals.itemSubtotalThb,
-      shippingFeeThb: totals.shippingFeeThb,
-      finalTotalThb: totals.finalTotalThb,
-      slipSelected: true
-    });
-    setOrder(submittedOrder);
-    setStep("success");
-    setIsSubmitting(false);
+    setSubmissionError("");
+
+    try {
+      const result = await submitOrderAction({
+        universityId: selectedUniversityId,
+        checkout,
+        slipSelected: true,
+        submissionKey,
+        items: cartItems.map((item) => ({
+          productId: item.productId,
+          size: item.size,
+          quantity: item.quantity
+        }))
+      });
+
+      if (!result.ok) {
+        setSubmissionError(result.message);
+        setIsSubmitting(false);
+        return;
+      }
+
+      setOrder({
+        orderId: result.order.orderId,
+        createdAtIso: result.order.createdAtIso,
+        universityId: result.order.universityId,
+        items: cartItems,
+        checkout,
+        itemSubtotalThb: result.order.itemSubtotalThb,
+        shippingFeeThb: result.order.shippingFeeThb,
+        finalTotalThb: result.order.finalTotalThb,
+        paymentStatus: result.order.paymentStatus,
+        slipSelected: true
+      });
+      setSubmissionKey(createSubmissionKey());
+      setStep("success");
+    } catch {
+      setSubmissionError(
+        "We could not save your order right now. Please try again in a moment."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function resetOrder() {
@@ -214,6 +249,8 @@ export function StorefrontApp() {
     setOrder(null);
     setFormErrors({});
     setSlipError("");
+    setSubmissionError("");
+    setSubmissionKey(createSubmissionKey());
     setStep(selectedUniversityId ? "shop" : "select");
   }
 
@@ -364,6 +401,7 @@ export function StorefrontApp() {
               checkout={checkout}
               isSubmitting={isSubmitting}
               items={cartItems}
+              submissionError={submissionError}
               slipFile={slipFile}
               totals={totals}
               universityName={selectedUniversity.name}
@@ -910,6 +948,7 @@ function ReviewSection({
   checkout,
   isSubmitting,
   items,
+  submissionError,
   slipFile,
   totals,
   universityName,
@@ -919,6 +958,7 @@ function ReviewSection({
   checkout: CheckoutDetails;
   isSubmitting: boolean;
   items: CartItem[];
+  submissionError: string;
   slipFile: File | null;
   totals: ReturnType<typeof calculateOrderTotals>;
   universityName: string;
@@ -1017,6 +1057,11 @@ function ReviewSection({
       <p className="review-confirm-note">
         This is the final step. By confirming, your order will be placed and staff will review your payment slip.
       </p>
+      {submissionError ? (
+        <p className="form-error" role="alert">
+          {submissionError}
+        </p>
+      ) : null}
 
       <div className="review-actions">
         <button className="btn btn-secondary" type="button" onClick={onBack}>
@@ -1146,4 +1191,12 @@ function canOpenStep(
   }
 
   return true;
+}
+
+function createSubmissionKey() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `submission-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
