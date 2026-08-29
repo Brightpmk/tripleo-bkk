@@ -217,136 +217,174 @@ export function StorefrontApp() {
     setStep(selectedUniversityId ? "shop" : "select");
   }
 
+  const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
+
   return (
     <main className="app-shell">
-      <header className="hero">
-        <nav className="topbar" aria-label="Store">
-          <a href="#universities" className="brand">
-            KingGallery.Studio
-          </a>
+      {/* ── Sticky Header ── */}
+      <header className="site-header">
+        <div className="site-header-inner">
           <button
-            className="cart-pill"
+            className="brand-wordmark"
             type="button"
-            onClick={() => setStep(cartItems.length > 0 ? "cart" : "shop")}
-            disabled={!selectedUniversityId}
+            onClick={() => {
+              setStep("select");
+            }}
           >
-            Cart <span>{cartItems.reduce((count, item) => count + item.quantity, 0)}</span>
+            KingGallery.Studio
           </button>
-        </nav>
+          {selectedUniversity ? (
+            <span className="university-badge">
+              {selectedUniversity.name}
+            </span>
+          ) : null}
+        </div>
+        <button
+          className="cart-button"
+          type="button"
+          onClick={() => setStep(cartItems.length > 0 ? "cart" : "shop")}
+          disabled={!selectedUniversityId}
+          aria-label={`Shopping cart with ${cartCount} items`}
+        >
+          Cart
+          <span className="cart-count">{cartCount}</span>
+        </button>
+      </header>
 
-        <section className="hero-grid" id="universities">
-          <div className="hero-copy">
-            <p className="eyebrow">University Jersey Orders</p>
-            <h1>Pick your campus. Build your cart. Pay by QR.</h1>
-            <p>
-              A shopping-style order flow for KingGallery.Studio jerseys, built
-              for quick mobile checkout without customer accounts.
+      {/* ── Landing: University Selection ── */}
+      {step === "select" ? (
+        <section className="landing" id="universities">
+          <div className="landing-header">
+            <p className="section-label">University Jersey Collection</p>
+            <h1 className="display-xl">Choose Your Campus</h1>
+            <p className="body-lg">
+              Select your university to explore our exclusive jersey collection.
+              Premium designs crafted for campus culture.
             </p>
           </div>
 
-          <div className="university-grid" aria-label="Choose one university">
+          <div className="university-selection" aria-label="Choose one university">
             {universities.map((university) => (
               <button
-                className="university-card"
+                className="uni-card"
                 key={university.id}
                 onClick={() => selectUniversity(university.id)}
-                style={{ "--accent": university.accent } as React.CSSProperties}
                 type="button"
+                style={{ "--uni-accent": university.accent } as React.CSSProperties}
               >
-                <span>{university.name}</span>
-                <small>{university.displayName}</small>
+                <div className="uni-card-content">
+                  <div className="uni-card-icon">
+                    {university.name.charAt(0)}
+                  </div>
+                  <div className="uni-card-name">{university.name}</div>
+                  <div className="uni-card-sub">{university.displayName}</div>
+                  <span className="uni-card-cta">Shop Collection</span>
+                </div>
               </button>
             ))}
           </div>
         </section>
-      </header>
+      ) : null}
 
-      <div className="content-shell">
-        {selectedUniversity ? (
-          <div className="progress" aria-label="Checkout progress">
-            {checkoutSteps.map((checkoutStep) => (
-              <button
-                className={step === checkoutStep ? "active" : ""}
-                disabled={!canOpenStep(checkoutStep, cartItems, selectedUniversityId)}
-                key={checkoutStep}
-                onClick={() => setStep(checkoutStep)}
-                type="button"
-              >
-                {stepLabels[checkoutStep]}
-              </button>
-            ))}
-          </div>
-        ) : null}
+      {/* ── Content Area ── */}
+      {step !== "select" ? (
+        <div className="content-container">
+          {/* Step Navigation */}
+          {selectedUniversity ? (
+            <nav className="step-nav" aria-label="Checkout progress">
+              {checkoutSteps.map((checkoutStep) => (
+                <button
+                  className={`step-btn ${step === checkoutStep ? "active" : ""}`}
+                  disabled={!canOpenStep(checkoutStep, cartItems, selectedUniversityId)}
+                  key={checkoutStep}
+                  onClick={() => setStep(checkoutStep)}
+                  type="button"
+                >
+                  {stepLabels[checkoutStep]}
+                </button>
+              ))}
+            </nav>
+          ) : null}
 
-        {step === "shop" && selectedUniversity ? (
-          <ShopSection
-            products={availableProducts}
-            selectedUniversityName={selectedUniversity.name}
-            choices={choices}
-            onChoiceChange={updateChoice}
-            onAddProduct={addProduct}
-          />
-        ) : null}
+          {/* ── Shop ── */}
+          {step === "shop" && selectedUniversity ? (
+            <ShopSection
+              products={availableProducts}
+              selectedUniversityName={selectedUniversity.name}
+              choices={choices}
+              onChoiceChange={updateChoice}
+              onAddProduct={addProduct}
+            />
+          ) : null}
 
-        {step === "cart" && selectedUniversity ? (
-          <CartSection
-            items={cartItems}
-            universityName={selectedUniversity.name}
-            onQuantityChange={(lineId, quantity) =>
-              setCartItems((current) =>
-                updateCartQuantity(current, lineId, quantity)
-              )
-            }
-            onRemove={(lineId) =>
-              setCartItems((current) => removeCartItem(current, lineId))
-            }
-            onContinue={() => setStep("checkout")}
-            onShop={() => setStep("shop")}
-          />
-        ) : null}
+          {/* ── Cart ── */}
+          {step === "cart" && selectedUniversity ? (
+            <CartSection
+              items={cartItems}
+              universityName={selectedUniversity.name}
+              onQuantityChange={(lineId, quantity) =>
+                setCartItems((current) =>
+                  updateCartQuantity(current, lineId, quantity)
+                )
+              }
+              onRemove={(lineId) =>
+                setCartItems((current) => removeCartItem(current, lineId))
+              }
+              onContinue={() => setStep("checkout")}
+              onShop={() => setStep("shop")}
+            />
+          ) : null}
 
-        {step === "checkout" && selectedUniversity ? (
-          <CheckoutSection
-            checkout={checkout}
-            errors={formErrors}
-            totals={totals}
-            universityName={selectedUniversity.name}
-            onChange={setCheckout}
-            onContinue={continueToPayment}
-          />
-        ) : null}
+          {/* ── Checkout ── */}
+          {step === "checkout" && selectedUniversity ? (
+            <CheckoutSection
+              checkout={checkout}
+              errors={formErrors}
+              totals={totals}
+              universityName={selectedUniversity.name}
+              onChange={setCheckout}
+              onContinue={continueToPayment}
+            />
+          ) : null}
 
-        {step === "payment" && selectedUniversity ? (
-          <PaymentSection
-            finalTotalThb={totals.finalTotalThb}
-            slipFile={slipFile}
-            slipError={slipError}
-            onSlipChange={selectSlip}
-            onContinue={() => slipFile && setStep("review")}
-          />
-        ) : null}
+          {/* ── Payment ── */}
+          {step === "payment" && selectedUniversity ? (
+            <PaymentSection
+              finalTotalThb={totals.finalTotalThb}
+              slipFile={slipFile}
+              slipError={slipError}
+              onSlipChange={selectSlip}
+              onContinue={() => slipFile && setStep("review")}
+            />
+          ) : null}
 
-        {step === "review" && selectedUniversity ? (
-          <ReviewSection
-            checkout={checkout}
-            isSubmitting={isSubmitting}
-            items={cartItems}
-            slipFile={slipFile}
-            totals={totals}
-            universityName={selectedUniversity.name}
-            onBack={() => setStep("payment")}
-            onConfirm={confirmOrder}
-          />
-        ) : null}
+          {/* ── Review ── */}
+          {step === "review" && selectedUniversity ? (
+            <ReviewSection
+              checkout={checkout}
+              isSubmitting={isSubmitting}
+              items={cartItems}
+              slipFile={slipFile}
+              totals={totals}
+              universityName={selectedUniversity.name}
+              onBack={() => setStep("payment")}
+              onConfirm={confirmOrder}
+            />
+          ) : null}
 
-        {step === "success" && order ? (
-          <SuccessSection order={order} onReset={resetOrder} />
-        ) : null}
-      </div>
+          {/* ── Success ── */}
+          {step === "success" && order ? (
+            <SuccessSection order={order} onReset={resetOrder} />
+          ) : null}
+        </div>
+      ) : null}
     </main>
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Shop Section
+   ════════════════════════════════════════════════════════════════ */
 function ShopSection({
   products,
   selectedUniversityName,
@@ -361,82 +399,130 @@ function ShopSection({
   onAddProduct: (product: Product) => void;
 }) {
   return (
-    <section className="shop-section" id="shop">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">{selectedUniversityName}</p>
-          <h2>Jerseys available for this university</h2>
+    <section id="shop">
+      <div className="section-header">
+        <div className="section-header-text">
+          <p className="section-label">{selectedUniversityName}</p>
+          <h2 className="display-lg">Jersey Collection</h2>
         </div>
       </div>
 
-      <div className="product-grid">
-        {products.map((product) => {
-          const choice = choices[product.id] ?? { size: "M", quantity: 1 };
+      {products.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">🏷️</div>
+          <h3>No jerseys available</h3>
+          <p>Check back soon for new releases.</p>
+        </div>
+      ) : (
+        <div className="product-grid">
+          {products.map((product) => {
+            const choice = choices[product.id] ?? { size: "M", quantity: 1 };
 
-          return (
-            <article className="product-card" key={product.id}>
-              <Image
-                src={product.image}
-                alt={`${product.name} product image`}
-                width={560}
-                height={420}
-              />
-              <div className="product-body">
-                <div>
-                  <p className="availability">{product.availability}</p>
-                  <h3>{product.name}</h3>
-                  <p>{product.colorName}</p>
+            return (
+              <article className="product-card" key={product.id}>
+                <div className="product-card-image">
+                  <Image
+                    src={product.image}
+                    alt={`${product.name} product image`}
+                    width={560}
+                    height={420}
+                  />
+                  {product.availability ? (
+                    <span className="product-badge">{product.availability}</span>
+                  ) : null}
                 </div>
-                <strong>{formatThb(product.priceThb)}</strong>
-                <div className="selection-row">
-                  <label>
-                    Size
-                    <select
-                      value={choice.size}
-                      onChange={(event) =>
-                        onChoiceChange(product.id, {
-                          size: event.target.value as JerseySize
-                        })
-                      }
-                    >
+
+                <div className="product-card-body">
+                  <div className="product-card-meta">
+                    <h3 className="product-card-name">{product.name}</h3>
+                    <p className="product-card-color">{product.colorName}</p>
+                  </div>
+
+                  <div className="product-card-price">{formatThb(product.priceThb)}</div>
+
+                  {/* Size selection as pills */}
+                  <div className="size-selector">
+                    <span className="size-selector-label">Size</span>
+                    <div className="size-pills">
                       {availableSizes.map((size) => (
-                        <option key={size} value={size}>
+                        <button
+                          key={size}
+                          type="button"
+                          className={`size-pill ${choice.size === size ? "selected" : ""}`}
+                          onClick={() =>
+                            onChoiceChange(product.id, { size })
+                          }
+                        >
                           {size}
-                        </option>
+                        </button>
                       ))}
-                    </select>
-                  </label>
-                  <label>
-                    Qty
-                    <input
-                      min="1"
-                      max="20"
-                      type="number"
-                      value={choice.quantity}
-                      onChange={(event) =>
-                        onChoiceChange(product.id, {
-                          quantity: Number(event.target.value)
-                        })
-                      }
-                    />
-                  </label>
+                    </div>
+                  </div>
+
+                  {/* Quantity stepper */}
+                  <div className="qty-row">
+                    <span className="qty-label">Quantity</span>
+                    <div className="qty-stepper">
+                      <button
+                        className="qty-stepper-btn"
+                        type="button"
+                        onClick={() =>
+                          onChoiceChange(product.id, {
+                            quantity: Math.max(1, choice.quantity - 1)
+                          })
+                        }
+                        aria-label="Decrease quantity"
+                      >
+                        −
+                      </button>
+                      <input
+                        className="qty-stepper-value"
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={choice.quantity}
+                        onChange={(event) =>
+                          onChoiceChange(product.id, {
+                            quantity: Number(event.target.value)
+                          })
+                        }
+                        aria-label="Quantity"
+                      />
+                      <button
+                        className="qty-stepper-btn"
+                        type="button"
+                        onClick={() =>
+                          onChoiceChange(product.id, {
+                            quantity: Math.min(20, choice.quantity + 1)
+                          })
+                        }
+                        aria-label="Increase quantity"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn btn-add-cart"
+                    type="button"
+                    onClick={() => onAddProduct(product)}
+                  >
+                    Add to Cart
+                  </button>
                 </div>
-                <button
-                  className="primary-button"
-                  type="button"
-                  onClick={() => onAddProduct(product)}
-                >
-                  Add to cart
-                </button>
-              </div>
-            </article>
-          );
-        })}
-      </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Cart Section
+   ════════════════════════════════════════════════════════════════ */
 function CartSection({
   items,
   universityName,
@@ -458,71 +544,110 @@ function CartSection({
   );
 
   return (
-    <section className="panel-section">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">{universityName}</p>
-          <h2>Your cart</h2>
+    <section className="cart-section">
+      <div className="section-header">
+        <div className="section-header-text">
+          <p className="section-label">{universityName}</p>
+          <h2 className="display-lg">Your Cart</h2>
         </div>
-        <button className="secondary-button" type="button" onClick={onShop}>
-          Continue shopping
+        <button className="btn btn-secondary" type="button" onClick={onShop}>
+          Continue Shopping
         </button>
       </div>
 
       {items.length === 0 ? (
         <div className="empty-state">
+          <div className="empty-state-icon">🛒</div>
           <h3>Your cart is empty</h3>
-          <button className="primary-button" type="button" onClick={onShop}>
-            Browse jerseys
+          <p>Browse our collection and find your perfect jersey.</p>
+          <button className="btn btn-primary" type="button" onClick={onShop}>
+            Browse Jerseys
           </button>
         </div>
       ) : (
         <>
-          <div className="cart-list">
+          <div className="cart-items">
             {items.map((item) => (
-              <article className="cart-line" key={item.lineId}>
-                <Image
-                  src={item.image}
-                  alt={`${item.productName} product image`}
-                  width={120}
-                  height={90}
-                />
-                <div className="cart-line-main">
-                  <h3>{item.productName}</h3>
-                  <p>
-                    {universityName} · {item.colorName} · Size {item.size}
-                  </p>
-                  <p>{formatThb(item.unitPriceThb)} each</p>
-                </div>
-                <label className="quantity-control">
-                  Qty
-                  <input
-                    min="0"
-                    max="20"
-                    type="number"
-                    value={item.quantity}
-                    onChange={(event) =>
-                      onQuantityChange(item.lineId, Number(event.target.value))
-                    }
+              <article className="cart-item" key={item.lineId}>
+                <div className="cart-item-image">
+                  <Image
+                    src={item.image}
+                    alt={`${item.productName} product image`}
+                    width={120}
+                    height={120}
                   />
-                </label>
-                <strong>{formatThb(getCartItemSubtotal(item))}</strong>
-                <button
-                  className="ghost-button"
-                  type="button"
-                  onClick={() => onRemove(item.lineId)}
-                >
-                  Remove
-                </button>
+                </div>
+
+                <div className="cart-item-details">
+                  <div className="cart-item-name">{item.productName}</div>
+                  <div className="cart-item-meta">
+                    {universityName} · {item.colorName} · Size {item.size}
+                  </div>
+                  <div className="cart-item-unit-price">
+                    {formatThb(item.unitPriceThb)} each
+                  </div>
+                </div>
+
+                <div className="cart-item-actions">
+                  <div className="cart-item-total">
+                    {formatThb(getCartItemSubtotal(item))}
+                  </div>
+                  <div className="qty-stepper">
+                    <button
+                      className="qty-stepper-btn"
+                      type="button"
+                      onClick={() =>
+                        onQuantityChange(item.lineId, Math.max(0, item.quantity - 1))
+                      }
+                      aria-label="Decrease quantity"
+                    >
+                      −
+                    </button>
+                    <input
+                      className="qty-stepper-value"
+                      type="number"
+                      min="0"
+                      max="20"
+                      value={item.quantity}
+                      onChange={(event) =>
+                        onQuantityChange(item.lineId, Number(event.target.value))
+                      }
+                      aria-label="Quantity"
+                    />
+                    <button
+                      className="qty-stepper-btn"
+                      type="button"
+                      onClick={() =>
+                        onQuantityChange(item.lineId, Math.min(20, item.quantity + 1))
+                      }
+                      aria-label="Increase quantity"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    className="btn btn-ghost"
+                    type="button"
+                    onClick={() => onRemove(item.lineId)}
+                  >
+                    Remove
+                  </button>
+                </div>
               </article>
             ))}
           </div>
-          <div className="cart-footer">
-            <span>Item subtotal</span>
-            <strong>{formatThb(subtotal)}</strong>
+
+          <div className="cart-summary">
+            <span className="cart-summary-label">Item Subtotal</span>
+            <span className="cart-summary-value">{formatThb(subtotal)}</span>
           </div>
-          <button className="primary-button wide" type="button" onClick={onContinue}>
-            Continue to checkout
+
+          <button
+            className="btn btn-primary btn-wide"
+            type="button"
+            onClick={onContinue}
+          >
+            Continue to Checkout
           </button>
         </>
       )}
@@ -530,6 +655,9 @@ function CartSection({
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Checkout Section
+   ════════════════════════════════════════════════════════════════ */
 function CheckoutSection({
   checkout,
   errors,
@@ -546,83 +674,125 @@ function CheckoutSection({
   onContinue: () => void;
 }) {
   return (
-    <section className="checkout-grid">
-      <div className="panel-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">{universityName}</p>
-            <h2>Checkout details</h2>
+    <section className="checkout-layout">
+      <div className="checkout-main">
+        {/* Customer Information */}
+        <div className="form-section">
+          <div className="section-header-text">
+            <p className="section-label">{universityName}</p>
+            <h2 className="display-lg">Checkout</h2>
           </div>
-        </div>
 
-        <div className="form-grid">
-          <label>
-            Full name
-            <input
-              value={checkout.fullName}
-              onChange={(event) =>
-                onChange({ ...checkout, fullName: event.target.value })
-              }
-              aria-invalid={Boolean(errors.fullName)}
-            />
-            {errors.fullName ? <small>{errors.fullName}</small> : null}
-          </label>
+          <h3 className="form-section-title">Customer Information</h3>
 
-          <label>
-            Phone number
-            <input
-              inputMode="tel"
-              value={checkout.phone}
-              onChange={(event) =>
-                onChange({ ...checkout, phone: event.target.value })
-              }
-              aria-invalid={Boolean(errors.phone)}
-            />
-            {errors.phone ? <small>{errors.phone}</small> : null}
-          </label>
-        </div>
-
-        <fieldset>
-          <legend>Delivery method</legend>
-          <div className="method-grid">
-            {(["pickup", "shipping"] as DeliveryMethod[]).map((method) => (
-              <label className="method-option" key={method}>
-                <input
-                  checked={checkout.deliveryMethod === method}
-                  name="deliveryMethod"
-                  type="radio"
-                  onChange={() => onChange({ ...checkout, deliveryMethod: method })}
-                />
-                <span>{method === "pickup" ? "Pickup" : "Shipping"}</span>
-                <small>
-                  {method === "pickup"
-                    ? `${universityName} pickup`
-                    : "Flat 50 THB per order"}
-                </small>
+          <div className="form-row">
+            <div className="form-field">
+              <label className="form-label" htmlFor="checkout-name">
+                Full Name
               </label>
-            ))}
+              <input
+                id="checkout-name"
+                className="form-input"
+                value={checkout.fullName}
+                onChange={(event) =>
+                  onChange({ ...checkout, fullName: event.target.value })
+                }
+                aria-invalid={Boolean(errors.fullName)}
+              />
+              {errors.fullName ? (
+                <span className="form-error">{errors.fullName}</span>
+              ) : null}
+            </div>
+
+            <div className="form-field">
+              <label className="form-label" htmlFor="checkout-phone">
+                Phone Number
+              </label>
+              <input
+                id="checkout-phone"
+                className="form-input"
+                inputMode="tel"
+                value={checkout.phone}
+                onChange={(event) =>
+                  onChange({ ...checkout, phone: event.target.value })
+                }
+                aria-invalid={Boolean(errors.phone)}
+              />
+              {errors.phone ? (
+                <span className="form-error">{errors.phone}</span>
+              ) : null}
+            </div>
           </div>
-        </fieldset>
+        </div>
 
-        {checkout.deliveryMethod === "shipping" ? (
-          <label>
-            Shipping address
-            <textarea
-              rows={4}
-              value={checkout.shippingAddress}
-              onChange={(event) =>
-                onChange({ ...checkout, shippingAddress: event.target.value })
-              }
-              aria-invalid={Boolean(errors.shippingAddress)}
-            />
-            {errors.shippingAddress ? (
-              <small>{errors.shippingAddress}</small>
-            ) : null}
-          </label>
-        ) : null}
+        {/* Delivery Method */}
+        <div className="form-section">
+          <h3 className="form-section-title">Delivery Method</h3>
 
-        <button className="primary-button wide" type="button" onClick={onContinue}>
-          Continue to payment
+          <fieldset>
+            <legend className="form-label">Choose how you&apos;d like to receive your order</legend>
+            <div className="delivery-options">
+              {(["pickup", "shipping"] as DeliveryMethod[]).map((method) => (
+                <label
+                  className={`delivery-card ${checkout.deliveryMethod === method ? "selected" : ""}`}
+                  key={method}
+                >
+                  <input
+                    checked={checkout.deliveryMethod === method}
+                    name="deliveryMethod"
+                    type="radio"
+                    onChange={() =>
+                      onChange({ ...checkout, deliveryMethod: method })
+                    }
+                  />
+                  <div className="delivery-card-check" aria-hidden="true" />
+                  <div className="delivery-card-header">
+                    <span className="delivery-card-title">
+                      {method === "pickup" ? "Pickup" : "Shipping"}
+                    </span>
+                    <span className="delivery-card-price">
+                      {method === "pickup" ? "Free" : "+50 THB"}
+                    </span>
+                  </div>
+                  <p className="delivery-card-desc">
+                    {method === "pickup"
+                      ? `Collect at ${universityName} campus`
+                      : "Delivered to your address — flat rate per order"}
+                  </p>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          {checkout.deliveryMethod === "shipping" ? (
+            <div className="form-field">
+              <label className="form-label" htmlFor="checkout-address">
+                Shipping Address
+              </label>
+              <textarea
+                id="checkout-address"
+                className="form-textarea"
+                rows={4}
+                value={checkout.shippingAddress}
+                onChange={(event) =>
+                  onChange({ ...checkout, shippingAddress: event.target.value })
+                }
+                aria-invalid={Boolean(errors.shippingAddress)}
+                placeholder="Enter your full shipping address"
+              />
+              {errors.shippingAddress ? (
+                <span className="form-error">{errors.shippingAddress}</span>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        <button
+          className="btn btn-primary btn-wide"
+          type="button"
+          onClick={onContinue}
+        >
+          Continue to Payment
         </button>
       </div>
 
@@ -631,6 +801,9 @@ function CheckoutSection({
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Payment Section
+   ════════════════════════════════════════════════════════════════ */
 function PaymentSection({
   finalTotalThb,
   slipFile,
@@ -645,55 +818,94 @@ function PaymentSection({
   onContinue: () => void;
 }) {
   return (
-    <section className="checkout-grid">
-      <div className="panel-section payment-panel">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">Payment pending</p>
-            <h2>{formatThb(finalTotalThb)}</h2>
-          </div>
+    <section className="payment-section">
+      <div className="section-header">
+        <div className="section-header-text">
+          <p className="section-label">Payment</p>
+          <h2 className="display-lg">Complete Your Payment</h2>
         </div>
+      </div>
 
-        <div className="payment-layout">
+      {/* Amount display */}
+      <div className="payment-amount">
+        <div className="payment-amount-label">Amount Due</div>
+        <div className="payment-amount-value">{formatThb(finalTotalThb)}</div>
+      </div>
+
+      {/* QR + Instructions */}
+      <div className="payment-qr-area">
+        <div className="qr-wrapper">
           <Image
-            className="qr-image"
             src="/payment/qr-placeholder.svg"
             alt="KingGallery.Studio payment QR placeholder"
             width={420}
             height={420}
           />
-          <div className="payment-copy">
-            <h3>Scan to transfer</h3>
-            <p>
-              Upload a transfer slip after payment. Staff will verify payment
-              manually before fulfillment.
-            </p>
-            <label className="file-drop">
-              <span>{slipFile ? slipFile.name : "Select payment slip"}</span>
-              <input
-                accept={acceptedSlipMimeTypes.join(",")}
-                type="file"
-                onChange={(event) =>
-                  onSlipChange(event.target.files?.item(0) ?? null)
-                }
-              />
-            </label>
-            {slipError ? <small className="error-text">{slipError}</small> : null}
-            <button
-              className="primary-button wide"
-              disabled={!slipFile}
-              type="button"
-              onClick={onContinue}
-            >
-              Review order
-            </button>
-          </div>
+        </div>
+
+        <div className="payment-instructions">
+          <h3>How to Pay</h3>
+          <ol className="payment-steps">
+            <li>Scan the QR code to transfer the exact amount shown above</li>
+            <li>Take a screenshot of your transfer confirmation</li>
+            <li>Upload the payment slip below</li>
+            <li>Review and confirm your order</li>
+          </ol>
+          <p>
+            Staff will verify your payment manually before processing your order.
+          </p>
         </div>
       </div>
+
+      {/* Slip upload */}
+      <label
+        className={`file-upload-area ${slipFile ? "has-file" : ""}`}
+      >
+        {slipFile ? (
+          <>
+            <span className="file-upload-icon">✓</span>
+            <span className="file-upload-filename">{slipFile.name}</span>
+            <span className="file-upload-change">Click to change file</span>
+          </>
+        ) : (
+          <>
+            <span className="file-upload-icon">📎</span>
+            <span className="file-upload-text">Upload Payment Slip</span>
+            <span className="file-upload-hint">
+              JPG, PNG, WEBP, or HEIC — max 5 MB
+            </span>
+          </>
+        )}
+        <input
+          accept={acceptedSlipMimeTypes.join(",")}
+          type="file"
+          onChange={(event) =>
+            onSlipChange(event.target.files?.item(0) ?? null)
+          }
+        />
+      </label>
+      {slipError ? (
+        <p className="form-error" style={{ marginTop: "8px" }}>
+          {slipError}
+        </p>
+      ) : null}
+
+      <button
+        className="btn btn-primary btn-wide"
+        disabled={!slipFile}
+        type="button"
+        onClick={onContinue}
+        style={{ marginTop: "24px" }}
+      >
+        Review Order
+      </button>
     </section>
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Review Section
+   ════════════════════════════════════════════════════════════════ */
 function ReviewSection({
   checkout,
   isSubmitting,
@@ -714,72 +926,118 @@ function ReviewSection({
   onConfirm: () => void;
 }) {
   return (
-    <section className="checkout-grid">
-      <div className="panel-section">
-        <div className="section-heading">
-          <div>
-            <p className="eyebrow">{universityName}</p>
-            <h2>Final review</h2>
-          </div>
-        </div>
-
-        <div className="review-list">
-          {items.map((item) => (
-            <div className="review-line" key={item.lineId}>
-              <span>
-                {item.productName} · {item.colorName} · Size {item.size} ×{" "}
-                {item.quantity}
-              </span>
-              <strong>{formatThb(getCartItemSubtotal(item))}</strong>
-            </div>
-          ))}
-        </div>
-
-        <dl className="detail-list">
-          <div>
-            <dt>Customer</dt>
-            <dd>{checkout.fullName}</dd>
-          </div>
-          <div>
-            <dt>Phone</dt>
-            <dd>{checkout.phone}</dd>
-          </div>
-          <div>
-            <dt>Delivery</dt>
-            <dd>{checkout.deliveryMethod === "pickup" ? "Pickup" : "Shipping"}</dd>
-          </div>
-          {checkout.deliveryMethod === "shipping" ? (
-            <div>
-              <dt>Address</dt>
-              <dd>{checkout.shippingAddress}</dd>
-            </div>
-          ) : null}
-          <div>
-            <dt>Payment slip</dt>
-            <dd>{slipFile ? "Selected" : "Missing"}</dd>
-          </div>
-        </dl>
-
-        <div className="action-row">
-          <button className="secondary-button" type="button" onClick={onBack}>
-            Back to payment
-          </button>
-          <button
-            className="primary-button"
-            disabled={!slipFile || isSubmitting}
-            type="button"
-            onClick={onConfirm}
-          >
-            {isSubmitting ? "Creating order..." : "Confirm order"}
-          </button>
+    <section className="review-section">
+      <div className="section-header">
+        <div className="section-header-text">
+          <p className="section-label">{universityName}</p>
+          <h2 className="display-lg">Review Your Order</h2>
         </div>
       </div>
 
-      <TotalsPanel totals={totals} />
+      {/* Order items */}
+      <div className="review-block">
+        <div className="review-block-title">Order Items</div>
+        {items.map((item) => (
+          <div className="review-item" key={item.lineId}>
+            <div className="review-item-image">
+              <Image
+                src={item.image}
+                alt={`${item.productName}`}
+                width={60}
+                height={60}
+              />
+            </div>
+            <div>
+              <div className="review-item-name">{item.productName}</div>
+              <div className="review-item-details">
+                {item.colorName} · Size {item.size} × {item.quantity}
+              </div>
+            </div>
+            <div className="review-item-total">
+              {formatThb(getCartItemSubtotal(item))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Customer details */}
+      <div className="review-block">
+        <div className="review-block-title">Customer Details</div>
+        <div className="review-details">
+          <div className="review-detail-row">
+            <span className="review-detail-label">Customer</span>
+            <span className="review-detail-value">{checkout.fullName}</span>
+          </div>
+          <div className="review-detail-row">
+            <span className="review-detail-label">Phone</span>
+            <span className="review-detail-value">{checkout.phone}</span>
+          </div>
+          <div className="review-detail-row">
+            <span className="review-detail-label">Delivery</span>
+            <span className="review-detail-value">
+              {checkout.deliveryMethod === "pickup" ? "Pickup" : "Shipping"}
+            </span>
+          </div>
+          {checkout.deliveryMethod === "shipping" ? (
+            <div className="review-detail-row">
+              <span className="review-detail-label">Address</span>
+              <span className="review-detail-value">
+                {checkout.shippingAddress}
+              </span>
+            </div>
+          ) : null}
+          <div className="review-detail-row">
+            <span className="review-detail-label">Payment slip</span>
+            <span className="review-detail-value">
+              {slipFile ? "✓ Uploaded" : "Missing"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Order totals */}
+      <div className="review-block">
+        <div className="review-block-title">Order Total</div>
+        <div className="review-totals">
+          <div className="review-total-row">
+            <span>Item subtotal</span>
+            <span>{formatThb(totals.itemSubtotalThb)}</span>
+          </div>
+          <div className="review-total-row">
+            <span>Shipping fee</span>
+            <span>{formatThb(totals.shippingFeeThb)}</span>
+          </div>
+          <div className="review-total-row review-total-final">
+            <span>Total</span>
+            <span>{formatThb(totals.finalTotalThb)}</span>
+          </div>
+        </div>
+      </div>
+
+      <p className="review-confirm-note">
+        This is the final step. By confirming, your order will be placed and staff will review your payment slip.
+      </p>
+
+      <div className="review-actions">
+        <button className="btn btn-secondary" type="button" onClick={onBack}>
+          Back to Payment
+        </button>
+        <button
+          className="btn btn-primary"
+          disabled={!slipFile || isSubmitting}
+          type="button"
+          onClick={onConfirm}
+        >
+          {isSubmitting ? "Placing Order…" : "Confirm & Place Order"}
+        </button>
+      </div>
     </section>
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Success Section
+   ════════════════════════════════════════════════════════════════ */
 function SuccessSection({
   order,
   onReset
@@ -791,56 +1049,85 @@ function SuccessSection({
 
   return (
     <section className="success-section">
-      <div className="success-card">
-        <p className="eyebrow">Order created</p>
-        <h2>Thank you. Save your Order ID.</h2>
-        <div className="order-id">{order.orderId}</div>
-        <p>
-          {university?.name} · {formatThb(order.finalTotalThb)} · Payment{" "}
-          {order.paymentStatus}
-        </p>
-        <div className="review-list">
+      <div className="success-icon" aria-hidden="true">✓</div>
+      <h2 className="display-lg">Order Placed Successfully</h2>
+      <p className="body-lg">
+        Thank you for your order. Please save your Order ID below.
+      </p>
+
+      <div className="order-id-display" role="status">
+        {order.orderId}
+      </div>
+
+      <div className="success-summary">
+        <div className="review-block">
+          <div className="review-block-title">Order Summary</div>
           {order.items.map((item) => (
-            <div className="review-line" key={item.lineId}>
-              <span>
-                {item.productName} · Size {item.size} × {item.quantity}
-              </span>
-              <strong>{formatThb(getCartItemSubtotal(item))}</strong>
+            <div className="review-item" key={item.lineId}>
+              <div className="review-item-image">
+                <Image
+                  src={item.image}
+                  alt={item.productName}
+                  width={60}
+                  height={60}
+                />
+              </div>
+              <div>
+                <div className="review-item-name">{item.productName}</div>
+                <div className="review-item-details">
+                  Size {item.size} × {item.quantity}
+                </div>
+              </div>
+              <div className="review-item-total">
+                {formatThb(getCartItemSubtotal(item))}
+              </div>
             </div>
           ))}
         </div>
-        <button className="primary-button" type="button" onClick={onReset}>
-          Start another order
-        </button>
       </div>
+
+      <p className="success-info">
+        {university?.name} · {formatThb(order.finalTotalThb)} · Payment{" "}
+        {order.paymentStatus}
+      </p>
+
+      <button className="btn btn-primary" type="button" onClick={onReset}>
+        Start Another Order
+      </button>
     </section>
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Totals Panel (sidebar)
+   ════════════════════════════════════════════════════════════════ */
 function TotalsPanel({
   totals
 }: {
   totals: ReturnType<typeof calculateOrderTotals>;
 }) {
   return (
-    <aside className="totals-panel" aria-label="Order totals">
-      <h3>Order totals</h3>
-      <div>
-        <span>Item subtotal</span>
-        <strong>{formatThb(totals.itemSubtotalThb)}</strong>
+    <aside className="totals-sidebar" aria-label="Order totals">
+      <h3 className="totals-sidebar-title">Order Summary</h3>
+      <div className="totals-row">
+        <span className="totals-row-label">Item subtotal</span>
+        <span className="totals-row-value">{formatThb(totals.itemSubtotalThb)}</span>
       </div>
-      <div>
-        <span>Shipping fee</span>
-        <strong>{formatThb(totals.shippingFeeThb)}</strong>
+      <div className="totals-row">
+        <span className="totals-row-label">Shipping fee</span>
+        <span className="totals-row-value">{formatThb(totals.shippingFeeThb)}</span>
       </div>
-      <div className="final-total">
-        <span>Final total</span>
-        <strong>{formatThb(totals.finalTotalThb)}</strong>
+      <div className="totals-row totals-row-final">
+        <span className="totals-row-label">Total</span>
+        <span className="totals-row-value">{formatThb(totals.finalTotalThb)}</span>
       </div>
     </aside>
   );
 }
 
+/* ════════════════════════════════════════════════════════════════
+   Step navigation guard (unchanged business logic)
+   ════════════════════════════════════════════════════════════════ */
 function canOpenStep(
   nextStep: Step,
   items: CartItem[],
