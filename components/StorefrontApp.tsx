@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useMemo, useState } from "react";
-import { submitOrderAction } from "@/app/actions/orders";
 import {
   availableSizes,
   getProductsForUniversity,
@@ -25,6 +24,7 @@ import {
   type CheckoutDetails,
   type ConfirmedOrder
 } from "@/lib/orders";
+import type { OrderSubmissionResult } from "@/lib/order-submission";
 import {
   calculateOrderTotals,
   type DeliveryMethod
@@ -201,7 +201,7 @@ export function StorefrontApp() {
     setSubmissionError("");
 
     try {
-      const result = await submitOrderAction({
+      const orderPayload = {
         universityId: selectedUniversityId,
         checkout,
         slipSelected: true,
@@ -211,7 +211,15 @@ export function StorefrontApp() {
           size: item.size,
           quantity: item.quantity
         }))
+      };
+      const formData = new FormData();
+      formData.append("order", JSON.stringify(orderPayload));
+      formData.append("slip", slipFile, slipFile.name);
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        body: formData
       });
+      const result = (await response.json()) as OrderSubmissionResult;
 
       if (!result.ok) {
         setSubmissionError(result.message);
@@ -910,7 +918,7 @@ function PaymentSection({
             <span className="file-upload-icon">📎</span>
             <span className="file-upload-text">Upload Payment Slip</span>
             <span className="file-upload-hint">
-              JPG, PNG, WEBP, or HEIC — max 5 MB
+              JPG, PNG, or WEBP — max 5 MB
             </span>
           </>
         )}

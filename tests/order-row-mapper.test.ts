@@ -69,6 +69,16 @@ describe("Google Sheet row mapping", () => {
     expect(rows.ordersRow[13]).toBe("NEW");
   });
 
+  it("maps the private Drive file ID into SLIP_FILE_ID", () => {
+    const rows = mapOrderToSheetRows({
+      ...order,
+      slipFileId: "drive-file-123"
+    });
+
+    expect(rows.ordersRow[11]).toBe("drive-file-123");
+    expect(rows.ordersRow[12]).toBe("");
+  });
+
   it("maps multiple cart items to multiple OrderItems rows", () => {
     const rows = mapOrderToSheetRows(order);
 

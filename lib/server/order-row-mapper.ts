@@ -55,7 +55,7 @@ export function mapOrderToSheetRows(order: ConfirmedOrder): OrderSheetRows {
     order.itemSubtotalThb,
     order.finalTotalThb,
     order.paymentStatus.toUpperCase(),
-    "",
+    order.slipFileId ?? "",
     "",
     "NEW",
     "",

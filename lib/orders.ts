@@ -22,4 +22,5 @@ export type ConfirmedOrder = {
   finalTotalThb: number;
   paymentStatus: PaymentStatus;
   slipSelected: boolean;
+  slipFileId?: string;
 };

@@ -3,8 +3,7 @@ export const MAX_SLIP_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 export const acceptedSlipMimeTypes = [
   "image/jpeg",
   "image/png",
-  "image/webp",
-  "image/heic"
+  "image/webp"
 ];
 
 export type SlipValidationResult =
@@ -15,7 +14,7 @@ export function validateSlipFile(file: Pick<File, "size" | "type">) {
   if (!acceptedSlipMimeTypes.includes(file.type)) {
     return {
       ok: false,
-      message: "Upload a JPG, PNG, WEBP, or HEIC image."
+      message: "Upload a JPG, PNG, or WEBP image."
     } satisfies SlipValidationResult;
   }
 

@@ -9,12 +9,24 @@ import { appendOrderRows } from "./google-sheets";
 import { createServerOrderId } from "./order-id";
 import { mapOrderToSheetRows } from "./order-row-mapper";
 import { validateOrderSubmission } from "./order-validation";
+import {
+  GoogleDriveSlipStorage,
+  type PaymentSlipStorage
+} from "./payment-slip-storage";
+import { validatePaymentSlipUpload } from "./payment-slip-validation";
 
 const recentSubmissions = new Map<string, Promise<OrderSubmissionResult>>();
 const SUBMISSION_CACHE_TTL_MS = 5 * 60 * 1000;
 
-export async function submitOrderToSheets(
-  request: OrderSubmissionRequest
+export type OrderServiceDependencies = {
+  appendRows?: typeof appendOrderRows;
+  slipStorage?: PaymentSlipStorage;
+};
+
+export async function submitOrderWithSlip(
+  request: OrderSubmissionRequest,
+  slipFile: File | null,
+  dependencies: OrderServiceDependencies = {}
 ): Promise<OrderSubmissionResult> {
   const submissionKey =
     typeof request.submissionKey === "string" && request.submissionKey.length > 0
@@ -25,12 +37,20 @@ export async function submitOrderToSheets(
     return recentSubmissions.get(submissionKey)!;
   }
 
-  const submission = persistOrder(request);
+  const submission = persistOrder(request, slipFile, dependencies);
 
   if (submissionKey) {
     recentSubmissions.set(submissionKey, submission);
-    submission.finally(() => {
-      setTimeout(() => recentSubmissions.delete(submissionKey), SUBMISSION_CACHE_TTL_MS);
+    submission.then((result) => {
+      if (!result.ok) {
+        recentSubmissions.delete(submissionKey);
+        return;
+      }
+
+      setTimeout(
+        () => recentSubmissions.delete(submissionKey),
+        SUBMISSION_CACHE_TTL_MS
+      );
     });
   }
 
@@ -38,7 +58,9 @@ export async function submitOrderToSheets(
 }
 
 async function persistOrder(
-  request: OrderSubmissionRequest
+  request: OrderSubmissionRequest,
+  slipFile: File | null,
+  dependencies: OrderServiceDependencies
 ): Promise<OrderSubmissionResult> {
   const validation = validateOrderSubmission(request);
 
@@ -50,7 +72,20 @@ async function persistOrder(
     };
   }
 
+  const slipValidation = await validatePaymentSlipUpload(slipFile);
+
+  if (!slipValidation.ok) {
+    return {
+      ok: false,
+      message: slipValidation.message
+    };
+  }
+
   const now = new Date();
+  const slipStorage = dependencies.slipStorage ?? new GoogleDriveSlipStorage();
+  const appendRows = dependencies.appendRows ?? appendOrderRows;
+  let uploadedSlipFileId: string | null = null;
+
   const order: ConfirmedOrder = {
     ...validation.order,
     orderId: createServerOrderId(now),
@@ -59,8 +94,32 @@ async function persistOrder(
   };
 
   try {
-    await appendOrderRows(mapOrderToSheetRows(order));
+    const uploadedSlip = await slipStorage.upload({
+      ...slipValidation.slip,
+      orderId: order.orderId,
+      createdAt: now
+    });
+    uploadedSlipFileId = uploadedSlip.fileId;
+
+    await appendRows(
+      mapOrderToSheetRows({
+        ...order,
+        slipFileId: uploadedSlip.fileId
+      })
+    );
   } catch (error) {
+    if (uploadedSlipFileId) {
+      try {
+        await slipStorage.delete(uploadedSlipFileId);
+      } catch (cleanupError) {
+        console.error("Payment slip cleanup failed", {
+          orderId: order.orderId,
+          errorName:
+            cleanupError instanceof Error ? cleanupError.name : "UnknownError"
+        });
+      }
+    }
+
     console.error("Order persistence failed", {
       orderId: order.orderId,
       errorName: error instanceof Error ? error.name : "UnknownError"
