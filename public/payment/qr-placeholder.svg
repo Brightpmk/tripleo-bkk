@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 420" role="img" aria-labelledby="title desc">
+  <title id="title">KingGallery payment QR placeholder</title>
+  <desc id="desc">Placeholder QR payment graphic for phase one checkout UI.</desc>
+  <rect width="420" height="420" fill="#fff"/>
+  <rect x="24" y="24" width="372" height="372" rx="16" fill="#f8faf7" stroke="#17201b" stroke-width="8"/>
+  <rect x="58" y="58" width="86" height="86" fill="#17201b"/>
+  <rect x="78" y="78" width="46" height="46" fill="#fff"/>
+  <rect x="276" y="58" width="86" height="86" fill="#17201b"/>
+  <rect x="296" y="78" width="46" height="46" fill="#fff"/>
+  <rect x="58" y="276" width="86" height="86" fill="#17201b"/>
+  <rect x="78" y="296" width="46" height="46" fill="#fff"/>
+  <path d="M184 66h24v24h-24zm48 0h24v48h-24zm-48 72h72v24h-72zm0 48h24v48h-24zm48 0h48v24h-48zm72 0h24v48h-24zm-96 72h24v48h-24zm48 0h72v24h-72zm96 0h24v96h-24zm-168 72h72v24h-72zm96-24h24v48h-24z" fill="#17201b"/>
+  <text x="210" y="218" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="800" fill="#a73330">KG PAY</text>
+</svg>

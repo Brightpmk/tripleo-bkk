@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420" role="img" aria-labelledby="title desc">
+  <title id="title">Mint Chocolate Chip jersey product mockup</title>
+  <desc id="desc">Mint green and chocolate campus jersey on a light background.</desc>
+  <rect width="560" height="420" fill="#e8f3ef"/>
+  <path d="M166 96 240 58h80l74 38 62 78-55 48-32-36v156H191V186l-32 36-55-48 62-78Z" fill="#91d7bd"/>
+  <path d="M240 58h80c-4 31-20 49-40 49s-36-18-40-49Z" fill="#fff9ef"/>
+  <path d="M191 186v156h178V186l-47-45h-84l-47 45Z" fill="#a8e3cd"/>
+  <path d="M214 170h132v22H214z" fill="#4b2f26" opacity=".86"/>
+  <circle cx="239" cy="226" r="9" fill="#4b2f26"/>
+  <circle cx="316" cy="265" r="9" fill="#4b2f26"/>
+  <circle cx="276" cy="303" r="9" fill="#4b2f26"/>
+  <text x="280" y="252" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" fill="#4b2f26">KG</text>
+</svg>

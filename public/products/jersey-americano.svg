@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 420" role="img" aria-labelledby="title desc">
+  <title id="title">Americano jersey product mockup</title>
+  <desc id="desc">Deep coffee jersey on a pale blue background.</desc>
+  <rect width="560" height="420" fill="#d9ecf2"/>
+  <path d="M166 96 240 58h80l74 38 62 78-55 48-32-36v156H191V186l-32 36-55-48 62-78Z" fill="#5a3c2c"/>
+  <path d="M240 58h80c-4 31-20 49-40 49s-36-18-40-49Z" fill="#f4e7d3"/>
+  <path d="M191 186v156h178V186l-47-45h-84l-47 45Z" fill="#6f4b36"/>
+  <path d="M230 145h100v18H230z" fill="#f4e7d3" opacity=".86"/>
+  <text x="280" y="242" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="34" font-weight="800" fill="#f4e7d3">KG</text>
+  <text x="280" y="284" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" fill="#f4e7d3">AMERICANO</text>
+</svg>
