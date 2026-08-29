@@ -5,11 +5,22 @@ const requiredEnvKeys = [
   "GOOGLE_ORDERS_RANGE",
   "GOOGLE_ORDER_ITEMS_RANGE",
   "GOOGLE_SERVICE_ACCOUNT_EMAIL",
-  "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
-  "GOOGLE_DRIVE_SLIP_FOLDER_ID"
+  "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY"
 ] as const;
 
 export type GoogleSheetsEnv = Record<(typeof requiredEnvKeys)[number], string>;
+
+const requiredDriveOAuthEnvKeys = [
+  "GOOGLE_DRIVE_CLIENT_ID",
+  "GOOGLE_DRIVE_CLIENT_SECRET",
+  "GOOGLE_DRIVE_REFRESH_TOKEN",
+  "GOOGLE_DRIVE_SLIP_FOLDER_ID"
+] as const;
+
+export type GoogleDriveOAuthEnv = Record<
+  (typeof requiredDriveOAuthEnvKeys)[number],
+  string
+>;
 
 export function getGoogleSheetsEnv(): GoogleSheetsEnv {
   const config = Object.fromEntries(
@@ -28,13 +39,21 @@ export function getGoogleSheetsEnv(): GoogleSheetsEnv {
 }
 
 export function getGoogleDriveEnv() {
-  const env = getGoogleSheetsEnv();
+  const config = Object.fromEntries(
+    requiredDriveOAuthEnvKeys.map((key) => [
+      key,
+      process.env[key]?.trim() ?? ""
+    ])
+  ) as GoogleDriveOAuthEnv;
+  const missing = requiredDriveOAuthEnvKeys.filter((key) => !config[key]);
 
-  return {
-    GOOGLE_SERVICE_ACCOUNT_EMAIL: env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-    GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY,
-    GOOGLE_DRIVE_SLIP_FOLDER_ID: env.GOOGLE_DRIVE_SLIP_FOLDER_ID
-  };
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required server environment variables: ${missing.join(", ")}`
+    );
+  }
+
+  return config;
 }
 
 export function normalizePrivateKey(privateKey: string) {

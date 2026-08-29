@@ -13,6 +13,9 @@ describe("server credential boundaries", () => {
 
     expect(envExample).not.toContain("NEXT_PUBLIC");
     expect(envExample).toContain("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");
+    expect(envExample).toContain("GOOGLE_DRIVE_CLIENT_ID");
+    expect(envExample).toContain("GOOGLE_DRIVE_CLIENT_SECRET");
+    expect(envExample).toContain("GOOGLE_DRIVE_REFRESH_TOKEN");
     expect(envExample).toContain("GOOGLE_DRIVE_SLIP_FOLDER_ID");
   });
 
@@ -23,5 +26,14 @@ describe("server credential boundaries", () => {
     expect(source).not.toContain("anyone");
     expect(source).not.toContain("webViewLink");
     expect(source).not.toContain("permissions.create");
+  });
+
+  it("does not reference Drive OAuth secrets from client modules", () => {
+    const clientSource = readFileSync("components/StorefrontApp.tsx", "utf8");
+
+    expect(clientSource).not.toContain("GOOGLE_DRIVE_CLIENT_ID");
+    expect(clientSource).not.toContain("GOOGLE_DRIVE_CLIENT_SECRET");
+    expect(clientSource).not.toContain("GOOGLE_DRIVE_REFRESH_TOKEN");
+    expect(clientSource).not.toContain("GOOGLE_DRIVE_SLIP_FOLDER_ID");
   });
 });

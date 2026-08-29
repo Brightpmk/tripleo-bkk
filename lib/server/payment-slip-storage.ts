@@ -3,8 +3,11 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 import { Readable } from "node:stream";
 import { google, type drive_v3 } from "googleapis";
-import { getGoogleDriveEnv, normalizePrivateKey } from "./env";
+import { getGoogleDriveEnv, type GoogleDriveOAuthEnv } from "./env";
 import type { ValidatedPaymentSlip } from "./payment-slip-validation";
+
+export const GOOGLE_DRIVE_FILE_SCOPE =
+  "https://www.googleapis.com/auth/drive.file";
 
 export type PaymentSlipUploadInput = ValidatedPaymentSlip & {
   orderId: string;
@@ -32,11 +35,7 @@ export class GoogleDriveSlipStorage implements PaymentSlipStorage {
     }
 
     const env = getGoogleDriveEnv();
-    const auth = new google.auth.JWT({
-      email: env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      key: normalizePrivateKey(env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY),
-      scopes: ["https://www.googleapis.com/auth/drive.file"]
-    });
+    const auth = createDriveOAuthClient(env);
 
     this.drive = google.drive({ version: "v3", auth });
     this.folderId = env.GOOGLE_DRIVE_SLIP_FOLDER_ID;
@@ -69,6 +68,19 @@ export class GoogleDriveSlipStorage implements PaymentSlipStorage {
   async delete(fileId: string) {
     await this.drive.files.delete({ fileId });
   }
+}
+
+export function createDriveOAuthClient(env: GoogleDriveOAuthEnv) {
+  const auth = new google.auth.OAuth2(
+    env.GOOGLE_DRIVE_CLIENT_ID,
+    env.GOOGLE_DRIVE_CLIENT_SECRET
+  );
+
+  auth.setCredentials({
+    refresh_token: env.GOOGLE_DRIVE_REFRESH_TOKEN
+  });
+
+  return auth;
 }
 
 export function buildSlipFileName(input: PaymentSlipUploadInput) {
