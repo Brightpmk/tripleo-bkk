@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { addCartItem, updateCartQuantity } from "@/lib/cart";
-import { products } from "@/lib/catalog";
 import { calculateOrderTotals, getShippingFee } from "@/lib/pricing";
+import { testProducts } from "./fixtures/products";
 
-const product = products[0];
+const product = testProducts[0];
 
 describe("pricing rules", () => {
   it("charges 0 THB shipping for pickup", () => {

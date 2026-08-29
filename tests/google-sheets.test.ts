@@ -60,4 +60,34 @@ describe("Google Sheets adapter", () => {
     expect(batchUpdateArgs?.requestBody.requests[0].appendCells.sheetId).toBe(10);
     expect(batchUpdateArgs?.requestBody.requests[1].appendCells.sheetId).toBe(11);
   });
+
+  it("reads product rows from the configured Products range", async () => {
+    const { readProductRowsWithClient } = await import("@/lib/server/google-sheets");
+    const values = [["PRODUCT_ID"], ["kg-bm-matcha"]];
+    const get = vi.fn(async () => ({
+      data: {
+        values
+      }
+    }));
+
+    const result = await readProductRowsWithClient(
+      {
+        spreadsheets: {
+          values: {
+            get
+          }
+        }
+      } as unknown as Parameters<typeof readProductRowsWithClient>[0],
+      {
+        GOOGLE_ORDER_SPREADSHEET_ID: "spreadsheet-id",
+        GOOGLE_PRODUCTS_RANGE: "'Products'!A:H"
+      }
+    );
+
+    expect(get).toHaveBeenCalledWith({
+      spreadsheetId: "spreadsheet-id",
+      range: "'Products'!A:H"
+    });
+    expect(result).toBe(values);
+  });
 });

@@ -5,6 +5,7 @@ import type {
   OrderSubmissionResult
 } from "@/lib/order-submission";
 import type { ConfirmedOrder } from "@/lib/orders";
+import type { Product } from "@/lib/catalog";
 import { appendOrderRows } from "./google-sheets";
 import { createServerOrderId } from "./order-id";
 import { mapOrderToSheetRows } from "./order-row-mapper";
@@ -14,12 +15,14 @@ import {
   type PaymentSlipStorage
 } from "./payment-slip-storage";
 import { validatePaymentSlipUpload } from "./payment-slip-validation";
+import { getCachedProductCatalog } from "./product-catalog";
 
 const recentSubmissions = new Map<string, Promise<OrderSubmissionResult>>();
 const SUBMISSION_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export type OrderServiceDependencies = {
   appendRows?: typeof appendOrderRows;
+  getProductCatalog?: () => Promise<Product[]>;
   slipStorage?: PaymentSlipStorage;
 };
 
@@ -62,7 +65,25 @@ async function persistOrder(
   slipFile: File | null,
   dependencies: OrderServiceDependencies
 ): Promise<OrderSubmissionResult> {
-  const validation = validateOrderSubmission(request);
+  const getProductCatalog =
+    dependencies.getProductCatalog ?? getCachedProductCatalog;
+  let products: Product[];
+
+  try {
+    products = await getProductCatalog();
+  } catch (error) {
+    console.error("Product catalog load failed before order validation", {
+      errorName: error instanceof Error ? error.name : "UnknownError"
+    });
+
+    return {
+      ok: false,
+      message:
+        "Product catalog is unavailable right now. Please try again in a moment."
+    };
+  }
+
+  const validation = validateOrderSubmission(request, products);
 
   if (!validation.ok) {
     return {

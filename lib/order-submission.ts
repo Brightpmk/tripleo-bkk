@@ -5,6 +5,7 @@ export type OrderSubmissionItemInput = {
   productId: string;
   size: string;
   quantity: number;
+  displayedUnitPriceThb?: number;
 };
 
 export type OrderSubmissionRequest = {

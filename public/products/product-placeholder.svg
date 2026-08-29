@@ -1,0 +1,10 @@
+<svg width="560" height="420" viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="560" height="420" fill="#F3F0EA"/>
+  <path d="M183 112L232 82H328L377 112L344 170V316H216V170L183 112Z" fill="#D9D1C5"/>
+  <path d="M232 82C240 105 256 118 280 118C304 118 320 105 328 82" stroke="#8F8374" stroke-width="12" stroke-linecap="round"/>
+  <path d="M216 170L183 112L142 147L183 214L216 190V170Z" fill="#C9BFB2"/>
+  <path d="M344 170L377 112L418 147L377 214L344 190V170Z" fill="#C9BFB2"/>
+  <path d="M242 212H318" stroke="#8F8374" stroke-width="12" stroke-linecap="round"/>
+  <path d="M252 242H308" stroke="#8F8374" stroke-width="12" stroke-linecap="round"/>
+  <text x="280" y="362" text-anchor="middle" fill="#6E6255" font-family="Arial, sans-serif" font-size="22" font-weight="700">KingGallery.Studio</text>
+</svg>

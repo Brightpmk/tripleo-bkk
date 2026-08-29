@@ -13,6 +13,7 @@ describe("server credential boundaries", () => {
 
     expect(envExample).not.toContain("NEXT_PUBLIC");
     expect(envExample).toContain("GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY");
+    expect(envExample).toContain("GOOGLE_PRODUCTS_RANGE");
     expect(envExample).toContain("GOOGLE_DRIVE_CLIENT_ID");
     expect(envExample).toContain("GOOGLE_DRIVE_CLIENT_SECRET");
     expect(envExample).toContain("GOOGLE_DRIVE_REFRESH_TOKEN");

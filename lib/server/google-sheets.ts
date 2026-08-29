@@ -17,6 +17,28 @@ export async function appendOrderRows(rows: OrderSheetRows) {
   await appendRowsWithClient(sheets, env, rows);
 }
 
+export async function readProductRows() {
+  const env = getGoogleSheetsEnv();
+  const sheets = getAuthenticatedSheetsClient(env);
+
+  return readProductRowsWithClient(sheets, env);
+}
+
+export async function readProductRowsWithClient(
+  sheets: SheetsClient,
+  env: Pick<
+    GoogleSheetsEnv,
+    "GOOGLE_ORDER_SPREADSHEET_ID" | "GOOGLE_PRODUCTS_RANGE"
+  >
+) {
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: env.GOOGLE_ORDER_SPREADSHEET_ID,
+    range: env.GOOGLE_PRODUCTS_RANGE
+  });
+
+  return response.data.values ?? [];
+}
+
 export async function appendRowsWithClient(
   sheets: SheetsClient,
   env: Pick<

@@ -1,8 +1,7 @@
 import {
-  availableSizes,
   getProductById,
   getUniversityById,
-  type JerseySize,
+  type Product,
   type UniversityId
 } from "@/lib/catalog";
 import { buildLineId, type CartItem } from "@/lib/cart";
@@ -30,7 +29,8 @@ export type ValidationResult =
 const deliveryMethods = ["pickup", "shipping"] as const;
 
 export function validateOrderSubmission(
-  request: OrderSubmissionRequest
+  request: OrderSubmissionRequest,
+  products: Product[]
 ): ValidationResult {
   const fieldErrors: Record<string, string> = {};
   const university = getUniversityById(request.universityId);
@@ -72,7 +72,7 @@ export function validateOrderSubmission(
 
   if (university && Array.isArray(request.items)) {
     request.items.forEach((item, index) => {
-      const product = getProductById(item.productId);
+      const product = getProductById(products, item.productId);
       const itemPrefix = `items.${index}`;
       const quantity = Math.floor(Number(item.quantity));
 
@@ -86,8 +86,16 @@ export function validateOrderSubmission(
           "Product is not available for this university.";
       }
 
-      if (!isJerseySize(item.size)) {
+      if (!isAvailableSize(product, item.size)) {
         fieldErrors[`${itemPrefix}.size`] = "Select a supported size.";
+      }
+
+      if (
+        typeof item.displayedUnitPriceThb === "number" &&
+        item.displayedUnitPriceThb !== product.priceThb
+      ) {
+        fieldErrors[`${itemPrefix}.price`] =
+          "Product price changed. Please review your cart and try again.";
       }
 
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
@@ -97,7 +105,9 @@ export function validateOrderSubmission(
 
       if (
         product.sellableUniversityIds.includes(university.id) &&
-        isJerseySize(item.size) &&
+        isAvailableSize(product, item.size) &&
+        (typeof item.displayedUnitPriceThb !== "number" ||
+          item.displayedUnitPriceThb === product.priceThb) &&
         Number.isInteger(quantity) &&
         quantity >= 1 &&
         quantity <= 20
@@ -124,7 +134,9 @@ export function validateOrderSubmission(
   if (Object.keys(fieldErrors).length > 0 || !isDeliveryMethod(deliveryMethod)) {
     return {
       ok: false,
-      message: "Please review the highlighted order details.",
+      message: Object.keys(fieldErrors).some((field) => field.endsWith(".price"))
+        ? "Product details changed. Please review your cart and try again."
+        : "Please review the highlighted order details.",
       fieldErrors
     };
   }
@@ -159,6 +171,9 @@ function isDeliveryMethod(value: unknown): value is DeliveryMethod {
   return deliveryMethods.includes(value as DeliveryMethod);
 }
 
-function isJerseySize(value: unknown): value is JerseySize {
-  return availableSizes.includes(value as JerseySize);
+function isAvailableSize(product: Product, value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    product.availableSizes.includes(value)
+  );
 }

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { OrderSubmissionRequest } from "@/lib/order-submission";
 import type { OrderSheetRows } from "@/lib/server/order-row-mapper";
 import { submitOrderWithSlip } from "@/lib/server/order-service";
+import { testProducts } from "./fixtures/products";
 
 vi.mock("server-only", () => ({}));
 
@@ -41,6 +42,7 @@ describe("order service slip persistence", () => {
 
     const result = await submitOrderWithSlip(buildRequest("upload-success"), jpegSlip(), {
       appendRows,
+      getProductCatalog: async () => testProducts,
       slipStorage: {
         upload,
         delete: vi.fn()
@@ -57,6 +59,7 @@ describe("order service slip persistence", () => {
   it("does not leak Drive details in the success response", async () => {
     const result = await submitOrderWithSlip(buildRequest("privacy-success"), jpegSlip(), {
       appendRows: vi.fn(async () => undefined),
+      getProductCatalog: async () => testProducts,
       slipStorage: {
         upload: vi.fn(async () => ({ fileId: "drive-file-secret" })),
         delete: vi.fn()
@@ -76,6 +79,7 @@ describe("order service slip persistence", () => {
 
     const result = await submitOrderWithSlip(buildRequest("drive-fails"), jpegSlip(), {
       appendRows,
+      getProductCatalog: async () => testProducts,
       slipStorage: {
         upload: vi.fn(async () => {
           throw new Error("Drive unavailable");
@@ -98,6 +102,7 @@ describe("order service slip persistence", () => {
       appendRows: vi.fn(async () => {
         throw new Error("Sheets unavailable");
       }),
+      getProductCatalog: async () => testProducts,
       slipStorage: {
         upload: vi.fn(async () => ({ fileId: "drive-file-456" })),
         delete: deleteSlip
@@ -116,6 +121,7 @@ describe("order service slip persistence", () => {
 
     const result = await submitOrderWithSlip(buildRequest("missing-slip"), null, {
       appendRows,
+      getProductCatalog: async () => testProducts,
       slipStorage: {
         upload,
         delete: vi.fn()
@@ -125,5 +131,28 @@ describe("order service slip persistence", () => {
     expect(result.ok).toBe(false);
     expect(upload).not.toHaveBeenCalled();
     expect(appendRows).not.toHaveBeenCalled();
+  });
+
+  it("does not fall back to fictional products when catalog loading fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const upload = vi.fn(async () => ({ fileId: "drive-file-789" }));
+    const appendRows = vi.fn(async () => undefined);
+
+    const result = await submitOrderWithSlip(buildRequest("catalog-fails"), jpegSlip(), {
+      appendRows,
+      getProductCatalog: async () => {
+        throw new Error("Products unavailable");
+      },
+      slipStorage: {
+        upload,
+        delete: vi.fn()
+      }
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? undefined : result.message).toContain("Product catalog");
+    expect(upload).not.toHaveBeenCalled();
+    expect(appendRows).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 });

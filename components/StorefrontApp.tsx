@@ -3,10 +3,9 @@
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import {
-  availableSizes,
   getProductsForUniversity,
   getUniversityById,
-  products,
+  productImagePlaceholder,
   universities,
   type JerseySize,
   type Product,
@@ -38,6 +37,11 @@ type ProductChoice = {
   quantity: number;
 };
 
+type StorefrontAppProps = {
+  initialProducts: Product[];
+  catalogError?: string;
+};
+
 const defaultCheckout: CheckoutDetails = {
   fullName: "",
   phone: "",
@@ -64,17 +68,20 @@ const checkoutSteps: Step[] = [
   "review"
 ];
 
-export function StorefrontApp() {
+export function StorefrontApp({
+  initialProducts,
+  catalogError = ""
+}: StorefrontAppProps) {
   const [selectedUniversityId, setSelectedUniversityId] =
     useState<UniversityId | null>(null);
   const [step, setStep] = useState<Step>("select");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [choices, setChoices] = useState<Record<string, ProductChoice>>(() =>
     Object.fromEntries(
-      products.map((product) => [
+      initialProducts.map((product) => [
         product.id,
         {
-          size: "M",
+          size: product.availableSizes[0] ?? "M",
           quantity: 1
         }
       ])
@@ -94,7 +101,7 @@ export function StorefrontApp() {
     ? getUniversityById(selectedUniversityId)
     : null;
   const availableProducts = selectedUniversityId
-    ? getProductsForUniversity(selectedUniversityId)
+    ? getProductsForUniversity(initialProducts, selectedUniversityId)
     : [];
   const totals = useMemo(
     () => calculateOrderTotals(cartItems, checkout.deliveryMethod),
@@ -133,12 +140,20 @@ export function StorefrontApp() {
       return;
     }
 
-    const choice = choices[product.id] ?? { size: "M", quantity: 1 };
+    const choice = choices[product.id] ?? {
+      size: product.availableSizes[0] ?? "M",
+      quantity: 1
+    };
+
+    const selectedSize = product.availableSizes.includes(choice.size)
+      ? choice.size
+      : product.availableSizes[0] ?? "M";
+
     setCartItems((current) =>
       addCartItem(current, {
         product,
         universityId: selectedUniversityId,
-        size: choice.size,
+        size: selectedSize,
         quantity: choice.quantity
       })
     );
@@ -209,7 +224,8 @@ export function StorefrontApp() {
         items: cartItems.map((item) => ({
           productId: item.productId,
           size: item.size,
-          quantity: item.quantity
+          quantity: item.quantity,
+          displayedUnitPriceThb: item.unitPriceThb
         }))
       };
       const formData = new FormData();
@@ -354,6 +370,7 @@ export function StorefrontApp() {
           {/* ── Shop ── */}
           {step === "shop" && selectedUniversity ? (
             <ShopSection
+              catalogError={catalogError}
               products={availableProducts}
               selectedUniversityName={selectedUniversity.name}
               choices={choices}
@@ -432,12 +449,14 @@ export function StorefrontApp() {
    Shop Section
    ════════════════════════════════════════════════════════════════ */
 function ShopSection({
+  catalogError,
   products,
   selectedUniversityName,
   choices,
   onChoiceChange,
   onAddProduct
 }: {
+  catalogError: string;
   products: Product[];
   selectedUniversityName: string;
   choices: Record<string, ProductChoice>;
@@ -453,7 +472,13 @@ function ShopSection({
         </div>
       </div>
 
-      {products.length === 0 ? (
+      {catalogError ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">!</div>
+          <h3>Catalog unavailable</h3>
+          <p>{catalogError}</p>
+        </div>
+      ) : products.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">🏷️</div>
           <h3>No jerseys available</h3>
@@ -462,12 +487,18 @@ function ShopSection({
       ) : (
         <div className="product-grid">
           {products.map((product) => {
-            const choice = choices[product.id] ?? { size: "M", quantity: 1 };
+            const choice = choices[product.id] ?? {
+              size: product.availableSizes[0] ?? "M",
+              quantity: 1
+            };
+            const selectedSize = product.availableSizes.includes(choice.size)
+              ? choice.size
+              : product.availableSizes[0] ?? "M";
 
             return (
               <article className="product-card" key={product.id}>
                 <div className="product-card-image">
-                  <Image
+                  <ProductImage
                     src={product.image}
                     alt={`${product.name} product image`}
                     width={560}
@@ -490,11 +521,11 @@ function ShopSection({
                   <div className="size-selector">
                     <span className="size-selector-label">Size</span>
                     <div className="size-pills">
-                      {availableSizes.map((size) => (
+                      {product.availableSizes.map((size) => (
                         <button
                           key={size}
                           type="button"
-                          className={`size-pill ${choice.size === size ? "selected" : ""}`}
+                          className={`size-pill ${selectedSize === size ? "selected" : ""}`}
                           onClick={() =>
                             onChoiceChange(product.id, { size })
                           }
@@ -616,7 +647,7 @@ function CartSection({
             {items.map((item) => (
               <article className="cart-item" key={item.lineId}>
                 <div className="cart-item-image">
-                  <Image
+                  <ProductImage
                     src={item.image}
                     alt={`${item.productName} product image`}
                     width={120}
@@ -988,7 +1019,7 @@ function ReviewSection({
         {items.map((item) => (
           <div className="review-item" key={item.lineId}>
             <div className="review-item-image">
-              <Image
+              <ProductImage
                 src={item.image}
                 alt={`${item.productName}`}
                 width={60}
@@ -1118,7 +1149,7 @@ function SuccessSection({
           {order.items.map((item) => (
             <div className="review-item" key={item.lineId}>
               <div className="review-item-image">
-                <Image
+                <ProductImage
                   src={item.image}
                   alt={item.productName}
                   width={60}
@@ -1181,6 +1212,31 @@ function TotalsPanel({
 /* ════════════════════════════════════════════════════════════════
    Step navigation guard (unchanged business logic)
    ════════════════════════════════════════════════════════════════ */
+function ProductImage({
+  src,
+  alt,
+  width,
+  height
+}: {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+}) {
+  const [resolvedSrc, setResolvedSrc] = useState(src || productImagePlaceholder);
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={resolvedSrc}
+      alt={alt}
+      width={width}
+      height={height}
+      onError={() => setResolvedSrc(productImagePlaceholder)}
+    />
+  );
+}
+
 function canOpenStep(
   nextStep: Step,
   items: CartItem[],
