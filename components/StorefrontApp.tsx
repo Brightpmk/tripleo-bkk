@@ -331,13 +331,7 @@ export function StorefrontApp({
             Tripleo.bkk
           </button>
           {selectedUniversity ? (
-            <span
-              className="uni-tag"
-              style={
-                { "--uni-accent": selectedUniversity.accent } as React.CSSProperties
-              }
-              title={selectedUniversity.fullName}
-            >
+            <span className="uni-tag" title={selectedUniversity.fullName}>
               <span className="uni-dot" aria-hidden="true" />
               {selectedUniversity.brand}
             </span>
@@ -498,7 +492,6 @@ function UniversitySection({
               onClick={() => onSelect(university.id)}
               type="button"
               aria-label={`${university.brand} — ${university.fullName}`}
-              style={{ "--uni-accent": university.accent } as React.CSSProperties}
             >
               <span className="uni-card-text">
                 <span className="uni-card-brand">{university.brand}</span>

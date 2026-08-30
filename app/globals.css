@@ -315,10 +315,11 @@ legend {
 
 .uni-dot {
   flex: 0 0 auto;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--uni-accent, var(--accent));
+  background: var(--accent);
+  opacity: 0.5;
 }
 
 .cart-btn {
@@ -450,13 +451,20 @@ legend {
     background var(--t-2) var(--ease), transform var(--t-2) var(--ease);
 }
 
+/* One uniform bone rule across all eight — the marker reads as structure,
+   not as a per-university colour code. It lifts on interaction. */
 .uni-card::before {
   content: "";
   position: absolute;
   inset: 0 auto 0 0;
-  width: 3px;
-  background: var(--uni-accent, var(--accent));
-  opacity: 0.85;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0.16;
+  transition: opacity var(--t-2) var(--ease);
+}
+
+.uni-card:active::before {
+  opacity: 0.75;
 }
 
 .uni-card:active {
@@ -721,6 +729,7 @@ legend {
   .wordmark:hover { color: var(--ink-2); }
   .cart-btn:not(:disabled):hover { border-color: var(--line-bright); background: var(--surface-3); }
   .uni-card:hover { border-color: var(--line-bright); background: var(--surface-2); transform: translateY(-1px); }
+  .uni-card:hover::before { opacity: 0.75; }
   .uni-card:hover .uni-card-go { border-color: var(--accent); color: var(--ink); }
   .progress-step:not(:disabled):not([aria-current="step"]):hover { color: var(--ink); background: var(--surface-2); }
   .btn-primary:not(:disabled):hover { background: var(--accent-hi); border-color: var(--accent-hi); }

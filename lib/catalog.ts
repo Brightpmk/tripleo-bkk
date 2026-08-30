@@ -41,7 +41,6 @@ export type University = {
   shortName: string;
   /** Full official university name, used for accessible labels. */
   fullName: string;
-  accent: string;
 };
 
 export type Product = {
@@ -65,8 +64,7 @@ export const universities: University[] = [
     sheetValue: "MAHASARAKHAM",
     brand: "msu.swagclub",
     shortName: "Mahasarakham",
-    fullName: "Mahasarakham University",
-    accent: "#C08A2E"
+    fullName: "Mahasarakham University"
   },
   {
     id: "bangkok-thonburi",
@@ -74,8 +72,7 @@ export const universities: University[] = [
     sheetValue: "BANGKOK THONBURI",
     brand: "btu.swagclub",
     shortName: "Bangkok Thonburi",
-    fullName: "Bangkok Thonburi University",
-    accent: "#8A5BA6"
+    fullName: "Bangkok Thonburi University"
   },
   {
     id: "ramkhamhaeng",
@@ -83,8 +80,7 @@ export const universities: University[] = [
     sheetValue: "RAMKHAMHAENG",
     brand: "ru.swagclub",
     shortName: "Ramkhamhaeng",
-    fullName: "Ramkhamhaeng University",
-    accent: "#3F5EA8"
+    fullName: "Ramkhamhaeng University"
   },
   {
     id: "mae-fah-luang",
@@ -92,8 +88,7 @@ export const universities: University[] = [
     sheetValue: "MAE FAH LUANG",
     brand: "mfu.swagclub",
     shortName: "Mae Fah Luang",
-    fullName: "Mae Fah Luang University",
-    accent: "#C2603C"
+    fullName: "Mae Fah Luang University"
   },
   {
     id: "maejo",
@@ -101,8 +96,7 @@ export const universities: University[] = [
     sheetValue: "MAEJO",
     brand: "mju.swagclub",
     shortName: "Maejo",
-    fullName: "Maejo University",
-    accent: "#5E8C3A"
+    fullName: "Maejo University"
   },
   {
     id: "bangmod",
@@ -110,8 +104,7 @@ export const universities: University[] = [
     sheetValue: "BANGMOD",
     brand: "bm.swagclub",
     shortName: "Bangmod",
-    fullName: "King Mongkut's University of Technology Thonburi",
-    accent: "#1F7A4F"
+    fullName: "King Mongkut's University of Technology Thonburi"
   },
   {
     id: "north-bangkok",
@@ -119,8 +112,7 @@ export const universities: University[] = [
     sheetValue: "NORTH BANGKOK",
     brand: "nb.swagclub",
     shortName: "North Bangkok",
-    fullName: "King Mongkut's University of Technology North Bangkok",
-    accent: "#23638A"
+    fullName: "King Mongkut's University of Technology North Bangkok"
   },
   {
     id: "ladkrabang",
@@ -128,8 +120,7 @@ export const universities: University[] = [
     sheetValue: "LADKRABANG",
     brand: "lkb.swagclub",
     shortName: "Ladkrabang",
-    fullName: "King Mongkut's Institute of Technology Ladkrabang",
-    accent: "#B43A34"
+    fullName: "King Mongkut's Institute of Technology Ladkrabang"
   }
 ];
 
