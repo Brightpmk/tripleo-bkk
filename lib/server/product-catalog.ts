@@ -180,8 +180,12 @@ function parseUniversity(value: ProductSheetCell): UniversityId | null {
 }
 
 function parsePrice(value: ProductSheetCell) {
-  const raw = cellToString(value).replace(/,/g, "").replace(/\bTHB\b/i, "");
-  const price = Number(raw.trim());
+  const raw = cellToString(value).replace(/[^0-9.-]+/g, "");
+  if (!raw) {
+    return null;
+  }
+
+  const price = Number(raw);
 
   if (!Number.isFinite(price) || price <= 0) {
     return null;
@@ -225,10 +229,14 @@ function parseActive(value: ProductSheetCell) {
 }
 
 function parseSortOrder(value: ProductSheetCell) {
-  const raw = cellToString(value).replace(/,/g, "");
+  const raw = cellToString(value).replace(/[^0-9.-]+/g, "");
+  if (!raw) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
   const sortOrder = Number(raw);
 
-  return raw && Number.isFinite(sortOrder)
+  return Number.isFinite(sortOrder)
     ? sortOrder
     : Number.MAX_SAFE_INTEGER;
 }

@@ -231,6 +231,34 @@ describe("Orders + OrderItems join", () => {
     expect(orders[0].phone).toBe("0812345678");
   });
 
+  it("parses numbers formatted with currency symbols (฿, $, THB) and commas", () => {
+    const orders = joinOrderSheets(
+      [
+        orderHeaders,
+        orderRow({
+          SHIPPING_FEE: "฿50",
+          SUBTOTAL: "฿9,075",
+          TOTAL: "฿9,125"
+        })
+      ],
+      [
+        itemHeaders,
+        itemRow({
+          QUANTITY: "2",
+          UNIT_PRICE: "฿4,537.50",
+          LINE_TOTAL: "฿9,075"
+        })
+      ]
+    );
+
+    expect(orders[0].shippingFeeThb).toBe(50);
+    expect(orders[0].subtotalThb).toBe(9075);
+    expect(orders[0].totalThb).toBe(9125);
+    expect(orders[0].items[0].quantity).toBe(2);
+    expect(orders[0].items[0].unitPriceThb).toBe(4537.5);
+    expect(orders[0].items[0].lineTotalThb).toBe(9075);
+  });
+
   it("strips address, notes, and items from the list summary DTO", () => {
     const [order] = joinOrderSheets(
       [orderHeaders, orderRow()],
