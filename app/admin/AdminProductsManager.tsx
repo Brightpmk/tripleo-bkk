@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   adminProductSizes,
@@ -32,6 +32,7 @@ export function AdminProductsManager({
 }) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
+  const [search, setSearch] = useState("");
   const [universityFilter, setUniversityFilter] =
     useState<FilterUniversity>("ALL");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("ALL");
@@ -40,16 +41,20 @@ export function AdminProductsManager({
   const [notice, setNotice] = useState("");
   const [loggingOut, setLoggingOut] = useState(false);
 
-  const filteredProducts = useMemo(
-    () =>
-      products.filter(
-        (product) =>
-          (universityFilter === "ALL" || product.university === universityFilter) &&
-          (statusFilter === "ALL" ||
-            (statusFilter === "ACTIVE" ? product.active : !product.active))
-      ),
-    [products, statusFilter, universityFilter]
-  );
+  const filteredProducts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    return products.filter(
+      (product) =>
+        (universityFilter === "ALL" ||
+          product.university === universityFilter) &&
+        (statusFilter === "ALL" ||
+          (statusFilter === "ACTIVE" ? product.active : !product.active)) &&
+        (query === "" ||
+          product.shirtColor.toLowerCase().includes(query) ||
+          product.productId.toLowerCase().includes(query))
+    );
+  }, [products, search, statusFilter, universityFilter]);
 
   function closeEditor() {
     setEditing(null);
@@ -82,7 +87,7 @@ export function AdminProductsManager({
   return (
     <main className="admin-shell">
       <header className="admin-topbar">
-        <div>
+        <div className="admin-topbar-text">
           <p className="admin-eyebrow">SWAGCLUB</p>
           <h1>Products</h1>
         </div>
@@ -115,13 +120,33 @@ export function AdminProductsManager({
           </button>
         </div>
 
-        {notice ? <p className="admin-notice" role="status">{notice}</p> : null}
-        {loadError ? <p className="admin-page-error" role="alert">{loadError}</p> : null}
+        {notice ? (
+          <p className="admin-notice" role="status">
+            {notice}
+          </p>
+        ) : null}
+        {loadError ? (
+          <p className="admin-page-error" role="alert">
+            {loadError}
+          </p>
+        ) : null}
 
-        <div className="admin-filters" aria-label="Product filters">
-          <label>
+        <div className="admin-filters">
+          <label htmlFor="admin-search">
+            Search
+            <input
+              id="admin-search"
+              type="search"
+              inputMode="search"
+              placeholder="Colour or product ID"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </label>
+          <label htmlFor="admin-filter-university">
             University
             <select
+              id="admin-filter-university"
               value={universityFilter}
               onChange={(event) =>
                 setUniversityFilter(event.target.value as FilterUniversity)
@@ -129,13 +154,16 @@ export function AdminProductsManager({
             >
               <option value="ALL">All universities</option>
               {adminUniversities.map((university) => (
-                <option key={university} value={university}>{university}</option>
+                <option key={university} value={university}>
+                  {university}
+                </option>
               ))}
             </select>
           </label>
-          <label>
+          <label htmlFor="admin-filter-status">
             Status
             <select
+              id="admin-filter-status"
               value={statusFilter}
               onChange={(event) =>
                 setStatusFilter(event.target.value as FilterStatus)
@@ -148,44 +176,64 @@ export function AdminProductsManager({
           </label>
         </div>
 
+        <p className="admin-result-count" role="status">
+          Showing {filteredProducts.length} of {products.length}
+        </p>
+
         <div className="admin-table-wrap">
-          <table className="admin-product-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>University</th>
-                <th>Price</th>
-                <th>Sizes</th>
-                <th>Status</th>
-                <th>Order</th>
-                <th><span className="admin-sr-only">Actions</span></th>
+          <table className="admin-product-table" role="table">
+            <thead role="rowgroup">
+              <tr role="row">
+                <th role="columnheader" scope="col">Product</th>
+                <th role="columnheader" scope="col">University</th>
+                <th role="columnheader" scope="col">Price</th>
+                <th role="columnheader" scope="col">Sizes</th>
+                <th role="columnheader" scope="col">Status</th>
+                <th role="columnheader" scope="col">Order</th>
+                <th role="columnheader" scope="col">
+                  <span className="admin-sr-only">Actions</span>
+                </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody role="rowgroup">
               {filteredProducts.map((product) => (
-                <tr key={product.productId}>
-                  <td>
+                <tr key={product.productId} role="row">
+                  <td className="admin-cell-identity" role="cell">
                     <div className="admin-product-identity">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={product.imageUrl} alt="" />
+                      <img src={product.imageUrl} alt="" loading="lazy" />
                       <div>
                         <strong>{product.shirtColor}</strong>
                         <span>{product.productId}</span>
                       </div>
                     </div>
                   </td>
-                  <td>{product.university}</td>
-                  <td>฿{formatPrice(product.priceThb)}</td>
-                  <td>{product.availableSizes.join(", ")}</td>
-                  <td>
-                    <span className={product.active ? "admin-status active" : "admin-status inactive"}>
+                  <td data-label="Campus" role="cell">
+                    {product.university}
+                  </td>
+                  <td data-label="Price" role="cell">
+                    ฿{formatPrice(product.priceThb)}
+                  </td>
+                  <td className="admin-cell-sizes" data-label="Sizes" role="cell">
+                    {product.availableSizes.join(", ")}
+                  </td>
+                  <td data-label="Status" role="cell">
+                    <span
+                      className={
+                        product.active
+                          ? "admin-status active"
+                          : "admin-status inactive"
+                      }
+                    >
                       {product.active ? "Active" : "Inactive"}
                     </span>
                   </td>
-                  <td>{product.sortOrder}</td>
-                  <td>
+                  <td data-label="Order" role="cell">
+                    {product.sortOrder}
+                  </td>
+                  <td className="admin-cell-actions" role="cell">
                     <button
-                      className="admin-edit-button"
+                      className="admin-row-edit"
                       type="button"
                       onClick={() => {
                         setNotice("");
@@ -194,6 +242,10 @@ export function AdminProductsManager({
                       }}
                     >
                       Edit
+                      <span className="admin-sr-only">
+                        {" "}
+                        {product.shirtColor || product.productId}
+                      </span>
                     </button>
                   </td>
                 </tr>
@@ -234,6 +286,29 @@ function ProductEditor({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const dialogRef = useRef<HTMLElement>(null);
+
+  // Lock the page behind the drawer and move focus into it — once.
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    dialogRef.current?.focus();
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, []);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !saving) {
+        onCancel();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onCancel, saving]);
 
   function update<K extends keyof AdminProduct>(key: K, value: AdminProduct[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -289,124 +364,181 @@ function ProductEditor({
   }
 
   return (
-    <div className="admin-editor-backdrop" role="presentation">
+    <div
+      className="admin-editor-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !saving) {
+          onCancel();
+        }
+      }}
+    >
       <section
         className="admin-editor"
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-labelledby="admin-editor-title"
       >
         <div className="admin-editor-head">
           <div>
-            <p className="admin-eyebrow">{created ? "New product" : product.productId}</p>
-            <h2 id="admin-editor-title">{created ? "Add product" : "Edit product"}</h2>
+            <p className="admin-eyebrow">
+              {created ? "New product" : product.productId}
+            </p>
+            <h2 id="admin-editor-title">
+              {created ? "Add product" : "Edit product"}
+            </h2>
           </div>
-          <button type="button" className="admin-close-button" onClick={onCancel} aria-label="Close editor">×</button>
+          <button
+            type="button"
+            className="admin-close-button"
+            onClick={onCancel}
+            aria-label="Close editor"
+          >
+            ×
+          </button>
         </div>
 
         <form className="admin-product-form" onSubmit={submit}>
-          <Field label="Product ID" error={errors.productId}>
-            <input
-              value={draft.productId}
-              onChange={(event) => update("productId", event.target.value)}
-              disabled={!created}
-              required
-              placeholder="kg-bm-matcha"
-            />
-          </Field>
+          <div className="admin-form-body">
+            <Field label="Product ID" error={errors.productId}>
+              <input
+                value={draft.productId}
+                onChange={(event) => update("productId", event.target.value)}
+                disabled={!created}
+                required
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                placeholder="kg-bm-matcha"
+              />
+            </Field>
 
-          <Field label="University" error={errors.university}>
-            <select
-              value={draft.university}
-              onChange={(event) => update("university", event.target.value as AdminUniversity)}
+            <Field label="University" error={errors.university}>
+              <select
+                value={draft.university}
+                onChange={(event) =>
+                  update("university", event.target.value as AdminUniversity)
+                }
+              >
+                {adminUniversities.map((university) => (
+                  <option key={university} value={university}>
+                    {university}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label="Shirt color" error={errors.shirtColor}>
+              <input
+                value={draft.shirtColor}
+                onChange={(event) => update("shirtColor", event.target.value)}
+                required
+                placeholder="Mint Chocolate Chip"
+              />
+            </Field>
+
+            <div className="admin-form-grid">
+              <Field label="Price (THB)" error={errors.priceThb}>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  max="1000000"
+                  step="0.01"
+                  value={draft.priceThb}
+                  onChange={(event) =>
+                    update("priceThb", Number(event.target.value))
+                  }
+                  required
+                />
+              </Field>
+              <Field label="Sort order" error={errors.sortOrder}>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="999999"
+                  step="1"
+                  value={draft.sortOrder}
+                  onChange={(event) =>
+                    update("sortOrder", Number(event.target.value))
+                  }
+                  required
+                />
+              </Field>
+            </div>
+
+            <fieldset className="admin-size-fieldset">
+              <legend>Available sizes</legend>
+              <div className="admin-size-options">
+                {adminProductSizes.map((size) => (
+                  <label key={size}>
+                    <input
+                      type="checkbox"
+                      checked={draft.availableSizes.includes(size)}
+                      onChange={() => toggleSize(size)}
+                    />
+                    <span>{size}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.availableSizes ? (
+                <small className="admin-field-error">
+                  {errors.availableSizes}
+                </small>
+              ) : null}
+            </fieldset>
+
+            <Field
+              label={created ? "Product image" : "Replace image (optional)"}
+              error={errors.imageUrl || errors.image}
+              hint="PNG, JPEG, or WEBP. Maximum 4 MB."
             >
-              {adminUniversities.map((university) => (
-                <option key={university} value={university}>{university}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Shirt color" error={errors.shirtColor}>
-            <input
-              value={draft.shirtColor}
-              onChange={(event) => update("shirtColor", event.target.value)}
-              required
-              placeholder="Mint Chocolate Chip"
-            />
-          </Field>
-
-          <div className="admin-form-grid">
-            <Field label="Price (THB)" error={errors.priceThb}>
               <input
-                type="number"
-                min="0.01"
-                max="1000000"
-                step="0.01"
-                value={draft.priceThb}
-                onChange={(event) => update("priceThb", Number(event.target.value))}
-                required
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                required={created}
+                onChange={(event) => setImage(event.target.files?.[0] ?? null)}
               />
             </Field>
-            <Field label="Sort order" error={errors.sortOrder}>
+
+            <label className="admin-active-toggle">
               <input
-                type="number"
-                min="0"
-                max="999999"
-                step="1"
-                value={draft.sortOrder}
-                onChange={(event) => update("sortOrder", Number(event.target.value))}
-                required
+                type="checkbox"
+                checked={draft.active}
+                onChange={(event) => update("active", event.target.checked)}
               />
-            </Field>
+              <span>
+                <strong>Active on storefront</strong>
+                <small>
+                  Inactive products stay in the sheet but cannot be purchased.
+                </small>
+              </span>
+            </label>
+
+            {message ? (
+              <p className="admin-page-error" role="alert">
+                {message}
+              </p>
+            ) : null}
           </div>
 
-          <fieldset className="admin-size-fieldset">
-            <legend>Available sizes</legend>
-            <div className="admin-size-options">
-              {adminProductSizes.map((size) => (
-                <label key={size}>
-                  <input
-                    type="checkbox"
-                    checked={draft.availableSizes.includes(size)}
-                    onChange={() => toggleSize(size)}
-                  />
-                  <span>{size}</span>
-                </label>
-              ))}
-            </div>
-            {errors.availableSizes ? <small className="admin-field-error">{errors.availableSizes}</small> : null}
-          </fieldset>
-
-          <Field
-            label={created ? "Product image" : "Replace product image (optional)"}
-            error={errors.imageUrl || errors.image}
-            hint="PNG, JPEG, or WEBP. Maximum 4 MB."
-          >
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              required={created}
-              onChange={(event) => setImage(event.target.files?.[0] ?? null)}
-            />
-          </Field>
-
-          <label className="admin-active-toggle">
-            <input
-              type="checkbox"
-              checked={draft.active}
-              onChange={(event) => update("active", event.target.checked)}
-            />
-            <span>
-              <strong>Active on storefront</strong>
-              <small>Inactive products remain in the sheet but cannot be purchased.</small>
-            </span>
-          </label>
-
-          {message ? <p className="admin-page-error" role="alert">{message}</p> : null}
-
           <div className="admin-form-actions">
-            <button type="button" className="admin-button admin-button-secondary" onClick={onCancel} disabled={saving}>Cancel</button>
-            <button type="submit" className="admin-button admin-button-primary" disabled={saving}>
+            <button
+              type="button"
+              className="admin-button admin-button-secondary"
+              onClick={onCancel}
+              disabled={saving}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="admin-button admin-button-primary"
+              disabled={saving}
+            >
               {saving ? "Saving…" : "Save product"}
             </button>
           </div>
