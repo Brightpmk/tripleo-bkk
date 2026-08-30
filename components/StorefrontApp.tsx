@@ -9,6 +9,7 @@ import {
   universities,
   type ShirtSize,
   type Product,
+  type University,
   type UniversityId
 } from "@/lib/catalog";
 import {
@@ -29,6 +30,12 @@ import {
   type DeliveryMethod
 } from "@/lib/pricing";
 import { acceptedSlipMimeTypes, validateSlipFile } from "@/lib/slip";
+import {
+  getSizeSurchargeThb,
+  getUnitPriceThbForSize,
+  hasSizeSurcharge,
+  SIZE_SURCHARGE_THB
+} from "@/lib/size-pricing";
 
 type Step = "select" | "shop" | "cart" | "checkout" | "payment" | "review" | "success";
 
@@ -52,7 +59,7 @@ const defaultCheckout: CheckoutDetails = {
 };
 
 const stepLabels: Record<Step, string> = {
-  select: "Campus",
+  select: "University",
   shop: "Shop",
   cart: "Cart",
   checkout: "Details",
@@ -321,17 +328,18 @@ export function StorefrontApp({
             type="button"
             onClick={() => setStep("select")}
           >
-            SWAGCLUB
+            Tripleo.bkk
           </button>
           {selectedUniversity ? (
             <span
-              className="campus-tag"
+              className="uni-tag"
               style={
                 { "--uni-accent": selectedUniversity.accent } as React.CSSProperties
               }
+              title={selectedUniversity.fullName}
             >
-              <span className="campus-dot" aria-hidden="true" />
-              {selectedUniversity.name}
+              <span className="uni-dot" aria-hidden="true" />
+              {selectedUniversity.brand}
             </span>
           ) : null}
         </div>
@@ -355,7 +363,7 @@ export function StorefrontApp({
       </header>
 
       {step === "select" ? (
-        <CampusSection onSelect={selectUniversity} />
+        <UniversitySection onSelect={selectUniversity} />
       ) : (
         <div className="content-container">
           {selectedUniversity && step !== "success" ? (
@@ -371,7 +379,7 @@ export function StorefrontApp({
             <ShopSection
               catalogError={catalogError}
               products={availableProducts}
-              universityName={selectedUniversity.name}
+              university={selectedUniversity}
               choices={choices}
               onChoiceChange={updateChoice}
               onAddProduct={addProduct}
@@ -381,7 +389,7 @@ export function StorefrontApp({
           {step === "cart" && selectedUniversity ? (
             <CartSection
               items={cartItems}
-              universityName={selectedUniversity.name}
+              university={selectedUniversity}
               onQuantityChange={(lineId, quantity) =>
                 setCartItems((current) =>
                   updateCartQuantity(current, lineId, quantity)
@@ -400,7 +408,7 @@ export function StorefrontApp({
               checkout={checkout}
               errors={formErrors}
               totals={totals}
-              universityName={selectedUniversity.name}
+              university={selectedUniversity}
               onChange={setCheckout}
               onContinue={continueToPayment}
             />
@@ -427,7 +435,7 @@ export function StorefrontApp({
               slipFile={slipFile}
               slipPreviewUrl={slipPreviewUrl}
               totals={totals}
-              universityName={selectedUniversity.name}
+              university={selectedUniversity}
               onBack={() => setStep("payment")}
               onConfirm={confirmOrder}
             />
@@ -438,14 +446,21 @@ export function StorefrontApp({
           ) : null}
         </div>
       )}
+
+      <footer className="site-footer">
+        <span className="site-footer-brand">Tripleo.bkk</span>
+        <span className="site-footer-note">
+          Premium university streetwear · Bangkok
+        </span>
+      </footer>
     </main>
   );
 }
 
 /* ════════════════════════════════════════════════════════════════
-   Campus selection
+   University selection
    ════════════════════════════════════════════════════════════════ */
-function CampusSection({
+function UniversitySection({
   onSelect
 }: {
   onSelect: (universityId: UniversityId) => void;
@@ -454,28 +469,27 @@ function CampusSection({
     <section className="landing" id="universities">
       <div className="landing-inner">
         <div className="landing-head">
-          <p className="eyebrow">Campus Collections</p>
+          <p className="eyebrow">Tripleo.bkk</p>
           <h1 className="display-xl">
-            Wear
+            Select your
             <br />
-            your campus
+            university
           </h1>
           <p className="lede">
-            Limited shirt drops built for three Bangkok campuses. Pick yours to
-            see what&apos;s in stock.
+            Limited shirt drops for eight Thai universities. Choose your
+            university to see what&apos;s in stock.
           </p>
         </div>
 
         <div className="landing-rule" />
-        <p className="eyebrow" id="campus-list-label">
-          Select a campus
+        <p className="eyebrow" id="university-list-label">
+          {universities.length} university collections
         </p>
 
         <div
           className="uni-list"
           role="group"
-          aria-labelledby="campus-list-label"
-          style={{ marginTop: "var(--s-4)" }}
+          aria-labelledby="university-list-label"
         >
           {universities.map((university) => (
             <button
@@ -483,11 +497,12 @@ function CampusSection({
               key={university.id}
               onClick={() => onSelect(university.id)}
               type="button"
+              aria-label={`${university.brand} — ${university.fullName}`}
               style={{ "--uni-accent": university.accent } as React.CSSProperties}
             >
               <span className="uni-card-text">
-                <span className="uni-card-name">{university.name}</span>
-                <span className="uni-card-sub">{university.displayName}</span>
+                <span className="uni-card-brand">{university.brand}</span>
+                <span className="uni-card-uni">{university.shortName}</span>
               </span>
               <span className="uni-card-go" aria-hidden="true">
                 →
@@ -562,14 +577,14 @@ function StepProgress({
 function ShopSection({
   catalogError,
   products,
-  universityName,
+  university,
   choices,
   onChoiceChange,
   onAddProduct
 }: {
   catalogError: string;
   products: Product[];
-  universityName: string;
+  university: University;
   choices: Record<string, ProductChoice>;
   onChoiceChange: (productId: string, choice: Partial<ProductChoice>) => void;
   onAddProduct: (product: Product) => void;
@@ -578,7 +593,7 @@ function ShopSection({
     <section className="step-section" id="shop">
       <div className="section-head">
         <div className="section-head-text">
-          <p className="eyebrow">{universityName}</p>
+          <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">The Collection</h2>
         </div>
       </div>
@@ -605,7 +620,7 @@ function ShopSection({
           </span>
           <h3>Nothing in stock yet</h3>
           <p>
-            This campus has no active drops right now. Check back soon for the
+            This university has no active drops right now. Check back soon for the
             next release.
           </p>
         </div>
@@ -620,6 +635,13 @@ function ShopSection({
               ? choice.size
               : product.availableSizes[0] ?? "M";
             const quantity = clampQuantity(choice.quantity, 1);
+            const sizeSurchargeThb = getSizeSurchargeThb(selectedSize);
+            const unitPriceThb = getUnitPriceThbForSize(
+              product.priceThb,
+              selectedSize
+            );
+            const hasSurchargedSize =
+              product.availableSizes.some(hasSizeSurcharge);
 
             return (
               <article className="product-card" key={product.id}>
@@ -639,8 +661,14 @@ function ShopSection({
                   <h3 className="product-card-name">{product.name}</h3>
                   <p className="product-card-color">{product.colorName}</p>
                   <p className="product-card-price">
-                    {formatThb(product.priceThb)}
+                    {formatThb(unitPriceThb)}
                   </p>
+                  {sizeSurchargeThb > 0 ? (
+                    <p className="price-note">
+                      {formatThb(product.priceThb)} +{" "}
+                      {formatThb(sizeSurchargeThb)} for {selectedSize}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div className="product-card-sizes">
@@ -659,20 +687,40 @@ function ShopSection({
                       role="group"
                       aria-labelledby={`size-label-${product.id}`}
                     >
-                      {product.availableSizes.map((size) => (
-                        <button
-                          key={size}
-                          type="button"
-                          className={`size-opt${
-                            selectedSize === size ? " is-selected" : ""
-                          }`}
-                          aria-pressed={selectedSize === size}
-                          onClick={() => onChoiceChange(product.id, { size })}
-                        >
-                          {size}
-                        </button>
-                      ))}
+                      {product.availableSizes.map((size) => {
+                        const surcharge = getSizeSurchargeThb(size);
+
+                        return (
+                          <button
+                            key={size}
+                            type="button"
+                            className={`size-opt${
+                              selectedSize === size ? " is-selected" : ""
+                            }`}
+                            aria-pressed={selectedSize === size}
+                            aria-label={
+                              surcharge > 0
+                                ? `Size ${size}, plus ${surcharge} THB`
+                                : `Size ${size}`
+                            }
+                            onClick={() => onChoiceChange(product.id, { size })}
+                          >
+                            <span aria-hidden="true">{size}</span>
+                            {surcharge > 0 ? (
+                              <span className="size-opt-fee" aria-hidden="true">
+                                +{surcharge}
+                              </span>
+                            ) : null}
+                          </button>
+                        );
+                      })}
                     </div>
+                    {hasSurchargedSize ? (
+                      <p className="size-note">
+                        3XL and above add {formatThb(SIZE_SURCHARGE_THB)} per
+                        shirt.
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 
@@ -707,14 +755,14 @@ function ShopSection({
    ════════════════════════════════════════════════════════════════ */
 function CartSection({
   items,
-  universityName,
+  university,
   onQuantityChange,
   onRemove,
   onContinue,
   onShop
 }: {
   items: CartItem[];
-  universityName: string;
+  university: University;
   onQuantityChange: (lineId: string, quantity: number) => void;
   onRemove: (lineId: string) => void;
   onContinue: () => void;
@@ -729,7 +777,7 @@ function CartSection({
     <section className="step-section">
       <div className="section-head">
         <div className="section-head-text">
-          <p className="eyebrow">{universityName}</p>
+          <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">Your Cart</h2>
         </div>
         {items.length > 0 ? (
@@ -777,6 +825,12 @@ function CartSection({
                   </span>
                   <span className="cart-row-unit">
                     {formatThb(item.unitPriceThb)} each
+                    {item.sizeSurchargeThb > 0 ? (
+                      <span className="cart-row-fee">
+                        {formatThb(item.basePriceThb)} +{" "}
+                        {formatThb(item.sizeSurchargeThb)} size {item.size}
+                      </span>
+                    ) : null}
                   </span>
                 </div>
 
@@ -851,14 +905,14 @@ function CheckoutSection({
   checkout,
   errors,
   totals,
-  universityName,
+  university,
   onChange,
   onContinue
 }: {
   checkout: CheckoutDetails;
   errors: Record<string, string>;
   totals: ReturnType<typeof calculateOrderTotals>;
-  universityName: string;
+  university: University;
   onChange: (checkout: CheckoutDetails) => void;
   onContinue: () => void;
 }) {
@@ -866,7 +920,7 @@ function CheckoutSection({
     <section className="step-section">
       <div className="section-head">
         <div className="section-head-text">
-          <p className="eyebrow">{universityName}</p>
+          <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">Your Details</h2>
         </div>
       </div>
@@ -975,7 +1029,7 @@ function CheckoutSection({
                       <span className="choice-body">
                         <span className="choice-head">
                           <span className="choice-title">
-                            {method === "pickup" ? "Campus pickup" : "Shipping"}
+                            {method === "pickup" ? "University pickup" : "Shipping"}
                           </span>
                           <span className="choice-price">
                             {method === "pickup" ? "Free" : "+50 THB"}
@@ -983,7 +1037,7 @@ function CheckoutSection({
                         </span>
                         <span className="choice-desc">
                           {method === "pickup"
-                            ? `Collect at ${universityName} campus.`
+                            ? `Collect at ${university.shortName}.`
                             : "Delivered to your address — flat rate per order."}
                         </span>
                       </span>
@@ -1096,7 +1150,7 @@ function PaymentSection({
           <div className="qr-card">
             <Image
               src="/payment/qr-placeholder.svg"
-              alt="SWAGCLUB payment QR code"
+              alt="Tripleo.bkk payment QR code"
               width={420}
               height={420}
               priority
@@ -1221,7 +1275,7 @@ function ReviewSection({
   slipFile,
   slipPreviewUrl,
   totals,
-  universityName,
+  university,
   onBack,
   onConfirm
 }: {
@@ -1232,7 +1286,7 @@ function ReviewSection({
   slipFile: File | null;
   slipPreviewUrl: string;
   totals: ReturnType<typeof calculateOrderTotals>;
-  universityName: string;
+  university: University;
   onBack: () => void;
   onConfirm: () => void;
 }) {
@@ -1240,7 +1294,7 @@ function ReviewSection({
     <section className="step-section">
       <div className="section-head">
         <div className="section-head-text">
-          <p className="eyebrow">{universityName}</p>
+          <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">Review Order</h2>
         </div>
       </div>
@@ -1264,7 +1318,7 @@ function ReviewSection({
             <dt>Method</dt>
             <dd>
               {checkout.deliveryMethod === "pickup"
-                ? `Pickup · ${universityName}`
+                ? `Pickup · ${university.shortName}`
                 : "Shipping"}
             </dd>
           </div>
@@ -1427,9 +1481,9 @@ function SuccessSection({
           <h3>What happens next</h3>
           <p>
             Staff verify your payment slip manually, then confirm your order by
-            phone. {university?.name} ·{" "}
+            phone. {university?.brand} ·{" "}
             {order.checkout.deliveryMethod === "pickup"
-              ? "Campus pickup"
+              ? "University pickup"
               : "Shipping"}{" "}
             · Payment {order.paymentStatus}.
           </p>
@@ -1502,6 +1556,9 @@ function OrderItemsPanel({ items }: { items: CartItem[] }) {
             <div className="line-item-name">{item.productName}</div>
             <div className="line-item-meta">
               {item.colorName} · {item.size} × {item.quantity}
+              {item.sizeSurchargeThb > 0
+                ? ` · incl. ${formatThb(item.sizeSurchargeThb)} size surcharge`
+                : ""}
             </div>
           </div>
           <div className="line-item-total">

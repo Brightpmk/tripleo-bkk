@@ -11,6 +11,7 @@ import {
   calculateOrderTotals,
   type DeliveryMethod
 } from "@/lib/pricing";
+import { getSizeSurchargeThb } from "@/lib/size-pricing";
 
 export type ValidatedOrderDraft = {
   universityId: UniversityId;
@@ -90,9 +91,17 @@ export function validateOrderSubmission(
         fieldErrors[`${itemPrefix}.size`] = "Select a supported size.";
       }
 
+      // Canonical price: the sheet's base PRICE plus the surcharge this
+      // server derives from the size. The client's number is only ever
+      // compared against this, never used.
+      const sizeSurchargeThb = isAvailableSize(product, item.size)
+        ? getSizeSurchargeThb(item.size)
+        : 0;
+      const unitPriceThb = product.priceThb + sizeSurchargeThb;
+
       if (
         typeof item.displayedUnitPriceThb === "number" &&
-        item.displayedUnitPriceThb !== product.priceThb
+        item.displayedUnitPriceThb !== unitPriceThb
       ) {
         fieldErrors[`${itemPrefix}.price`] =
           "Product price changed. Please review your cart and try again.";
@@ -107,7 +116,7 @@ export function validateOrderSubmission(
         product.sellableUniversityIds.includes(university.id) &&
         isAvailableSize(product, item.size) &&
         (typeof item.displayedUnitPriceThb !== "number" ||
-          item.displayedUnitPriceThb === product.priceThb) &&
+          item.displayedUnitPriceThb === unitPriceThb) &&
         Number.isInteger(quantity) &&
         quantity >= 1 &&
         quantity <= 20
@@ -124,7 +133,9 @@ export function validateOrderSubmission(
           colorName: product.colorName,
           size: item.size,
           quantity,
-          unitPriceThb: product.priceThb,
+          basePriceThb: product.priceThb,
+          sizeSurchargeThb,
+          unitPriceThb,
           image: product.image
         });
       }

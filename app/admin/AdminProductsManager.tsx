@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   adminProductSizes,
   adminUniversities,
+  getUniversityLabel,
   type AdminProduct,
   type AdminUniversity
 } from "@/lib/admin-products";
@@ -14,7 +15,7 @@ type FilterStatus = "ALL" | "ACTIVE" | "INACTIVE";
 
 const emptyProduct: AdminProduct = {
   productId: "",
-  university: "BANGMOD",
+  university: adminUniversities[0],
   shirtColor: "",
   priceThb: 390,
   imageUrl: "",
@@ -88,7 +89,7 @@ export function AdminProductsManager({
     <main className="admin-shell">
       <header className="admin-topbar">
         <div className="admin-topbar-text">
-          <p className="admin-eyebrow">SWAGCLUB</p>
+          <p className="admin-eyebrow">Tripleo.bkk</p>
           <h1>Products</h1>
         </div>
         <button
@@ -155,7 +156,7 @@ export function AdminProductsManager({
               <option value="ALL">All universities</option>
               {adminUniversities.map((university) => (
                 <option key={university} value={university}>
-                  {university}
+                  {getUniversityLabel(university)}
                 </option>
               ))}
             </select>
@@ -208,8 +209,8 @@ export function AdminProductsManager({
                       </div>
                     </div>
                   </td>
-                  <td data-label="Campus" role="cell">
-                    {product.university}
+                  <td data-label="University" role="cell">
+                    {getUniversityLabel(product.university)}
                   </td>
                   <td data-label="Price" role="cell">
                     ฿{formatPrice(product.priceThb)}
@@ -424,7 +425,7 @@ function ProductEditor({
               >
                 {adminUniversities.map((university) => (
                   <option key={university} value={university}>
-                    {university}
+                    {getUniversityLabel(university)}
                   </option>
                 ))}
               </select>

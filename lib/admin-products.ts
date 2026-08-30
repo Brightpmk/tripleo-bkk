@@ -1,10 +1,16 @@
-export const adminUniversities = [
-  "BANGMOD",
-  "LADKRABANG",
-  "NORTH BANGKOK"
-] as const;
+import {
+  universities,
+  universitySheetValues,
+  type UniversitySheetValue
+} from "./catalog";
 
-export type AdminUniversity = (typeof adminUniversities)[number];
+/**
+ * Admin writes the canonical Google Sheets UNIVERSITY value straight into
+ * Products.UNIVERSITY, so this list is the catalog's sheet values verbatim.
+ */
+export const adminUniversities = universitySheetValues;
+
+export type AdminUniversity = UniversitySheetValue;
 
 export const adminProductSizes = [
   "XS",
@@ -30,3 +36,15 @@ export type AdminProduct = {
 };
 
 export type AdminProductInput = AdminProduct;
+
+/**
+ * Admin-facing label for a canonical sheet value, e.g.
+ * "BANGMOD" -> "bm.swagclub · Bangmod". The stored value never changes.
+ */
+export function getUniversityLabel(sheetValue: string) {
+  const match = universities.find(
+    (university) => university.sheetValue === sheetValue
+  );
+
+  return match ? `${match.brand} · ${match.shortName}` : sheetValue;
+}

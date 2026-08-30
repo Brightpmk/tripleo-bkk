@@ -40,7 +40,9 @@ export type OrderSheetRows = {
 };
 
 export function mapOrderToSheetRows(order: ConfirmedOrder): OrderSheetRows {
-  const universityName = getUniversityById(order.universityId)?.name ?? order.universityId;
+  // Orders.UNIVERSITY stores the canonical sheet value, not a display label.
+  const universityName =
+    getUniversityById(order.universityId)?.sheetValue ?? order.universityId;
   const ordersRow: SheetCell[] = [
     order.orderId,
     order.createdAtIso,

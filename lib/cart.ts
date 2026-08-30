@@ -1,4 +1,5 @@
 import type { ShirtSize, Product, UniversityId } from "./catalog";
+import { getSizeSurchargeThb } from "./size-pricing";
 
 export type CartItem = {
   lineId: string;
@@ -8,6 +9,11 @@ export type CartItem = {
   colorName: string;
   size: ShirtSize;
   quantity: number;
+  /** Product PRICE from the Products sheet, before any size surcharge. */
+  basePriceThb: number;
+  /** Flat per-shirt surcharge for 3XL and above. */
+  sizeSurchargeThb: number;
+  /** What one shirt of this size actually costs: base + surcharge. */
   unitPriceThb: number;
   image: string;
 };
@@ -44,6 +50,8 @@ export function addCartItem(items: CartItem[], input: AddCartItemInput) {
     );
   }
 
+  const sizeSurchargeThb = getSizeSurchargeThb(input.size);
+
   return [
     ...items,
     {
@@ -54,7 +62,9 @@ export function addCartItem(items: CartItem[], input: AddCartItemInput) {
       colorName: input.product.colorName,
       size: input.size,
       quantity,
-      unitPriceThb: input.product.priceThb,
+      basePriceThb: input.product.priceThb,
+      sizeSurchargeThb,
+      unitPriceThb: input.product.priceThb + sizeSurchargeThb,
       image: input.product.image
     }
   ];

@@ -25,6 +25,8 @@ const order: ConfirmedOrder = {
       colorName: "Matcha",
       size: "M",
       quantity: 2,
+      basePriceThb: 390,
+      sizeSurchargeThb: 0,
       unitPriceThb: 390,
       image: "/products/jersey-matcha.svg"
     },
@@ -36,6 +38,8 @@ const order: ConfirmedOrder = {
       colorName: "Mint Chocolate Chip",
       size: "L",
       quantity: 1,
+      basePriceThb: 420,
+      sizeSurchargeThb: 0,
       unitPriceThb: 420,
       image: "/products/jersey-mint-chocolate.svg"
     }

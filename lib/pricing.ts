@@ -1,6 +1,13 @@
 import type { CartItem } from "./cart";
 import { getCartSubtotal } from "./cart";
 
+export {
+  getSizeSurchargeThb,
+  getUnitPriceThbForSize,
+  hasSizeSurcharge,
+  SIZE_SURCHARGE_THB
+} from "./size-pricing";
+
 export type DeliveryMethod = "pickup" | "shipping";
 
 export const SHIPPING_FEE_THB = 50;

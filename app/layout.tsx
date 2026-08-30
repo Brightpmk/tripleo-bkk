@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "SWAGCLUB — Premium Streetwear",
+  title: "Tripleo.bkk — Premium University Streetwear",
   description:
-    "Premium streetwear shirts for BANGMOD, LADKRABANG, and NORTH BANGKOK. Shop your campus collection at SWAGCLUB.",
+    "Premium streetwear shirts for eight Thai universities. Shop your university collection at Tripleo.bkk.",
 };
 
 export const viewport: Viewport = {

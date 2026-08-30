@@ -2,6 +2,7 @@ import "server-only";
 
 import {
   productImagePlaceholder,
+  universities,
   type Product,
   type UniversityId
 } from "@/lib/catalog";
@@ -32,11 +33,18 @@ const productHeaders = [
 type ProductHeader = (typeof productHeaders)[number];
 type ProductHeaderMap = Record<ProductHeader, number>;
 
-const universityBySheetValue: Record<string, UniversityId> = {
-  BANGMOD: "bangmod",
-  LADKRABANG: "ladkrabang",
-  "NORTH BANGKOK": "north-bangkok"
-};
+/**
+ * Sheet UNIVERSITY value -> internal id. Built from the catalog so a new
+ * university is supported everywhere the moment it is added there. The
+ * internal id is accepted too (hyphens read as spaces), which keeps rows
+ * written as "north-bangkok" working alongside "NORTH BANGKOK".
+ */
+const universityBySheetValue: Record<string, UniversityId> = Object.fromEntries(
+  universities.flatMap((university) => [
+    [normalizeHeader(university.sheetValue), university.id],
+    [normalizeHeader(university.id.replace(/-/g, " ")), university.id]
+  ])
+);
 
 export const PRODUCT_CATALOG_CACHE_TAG = "swagclub-product-catalog";
 

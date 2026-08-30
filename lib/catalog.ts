@@ -1,10 +1,46 @@
-export type UniversityId = "bangmod" | "ladkrabang" | "north-bangkok";
+export const universityIds = [
+  "mahasarakham",
+  "bangkok-thonburi",
+  "ramkhamhaeng",
+  "mae-fah-luang",
+  "maejo",
+  "bangmod",
+  "north-bangkok",
+  "ladkrabang"
+] as const;
+
+export type UniversityId = (typeof universityIds)[number];
+
+/**
+ * Canonical UNIVERSITY values as stored in the Google Sheets workbook
+ * (Products.UNIVERSITY and Orders.UNIVERSITY). These strings are the
+ * database contract — never change an existing one, only add new ones.
+ * Everything the customer sees comes from `brand` / `shortName` instead.
+ */
+export const universitySheetValues = [
+  "MAHASARAKHAM",
+  "BANGKOK THONBURI",
+  "RAMKHAMHAENG",
+  "MAE FAH LUANG",
+  "MAEJO",
+  "BANGMOD",
+  "NORTH BANGKOK",
+  "LADKRABANG"
+] as const;
+
+export type UniversitySheetValue = (typeof universitySheetValues)[number];
 
 export type University = {
   id: UniversityId;
   slug: string;
-  name: string;
-  displayName: string;
+  /** Canonical Google Sheets value. Persisted — do not change. */
+  sheetValue: UniversitySheetValue;
+  /** University sub-brand shown as the primary label, e.g. "msu.swagclub". */
+  brand: string;
+  /** Short university name shown as the secondary label. */
+  shortName: string;
+  /** Full official university name, used for accessible labels. */
+  fullName: string;
   accent: string;
 };
 
@@ -24,25 +60,76 @@ export type Product = {
 
 export const universities: University[] = [
   {
-    id: "bangmod",
-    slug: "bangmod",
-    name: "BANGMOD",
-    displayName: "KMUTT Bangmod",
-    accent: "#1f7a4f"
+    id: "mahasarakham",
+    slug: "mahasarakham",
+    sheetValue: "MAHASARAKHAM",
+    brand: "msu.swagclub",
+    shortName: "Mahasarakham",
+    fullName: "Mahasarakham University",
+    accent: "#C08A2E"
   },
   {
-    id: "ladkrabang",
-    slug: "ladkrabang",
-    name: "LADKRABANG",
-    displayName: "KMITL Ladkrabang",
-    accent: "#b43a34"
+    id: "bangkok-thonburi",
+    slug: "bangkok-thonburi",
+    sheetValue: "BANGKOK THONBURI",
+    brand: "btu.swagclub",
+    shortName: "Bangkok Thonburi",
+    fullName: "Bangkok Thonburi University",
+    accent: "#8A5BA6"
+  },
+  {
+    id: "ramkhamhaeng",
+    slug: "ramkhamhaeng",
+    sheetValue: "RAMKHAMHAENG",
+    brand: "ru.swagclub",
+    shortName: "Ramkhamhaeng",
+    fullName: "Ramkhamhaeng University",
+    accent: "#3F5EA8"
+  },
+  {
+    id: "mae-fah-luang",
+    slug: "mae-fah-luang",
+    sheetValue: "MAE FAH LUANG",
+    brand: "mfu.swagclub",
+    shortName: "Mae Fah Luang",
+    fullName: "Mae Fah Luang University",
+    accent: "#C2603C"
+  },
+  {
+    id: "maejo",
+    slug: "maejo",
+    sheetValue: "MAEJO",
+    brand: "mju.swagclub",
+    shortName: "Maejo",
+    fullName: "Maejo University",
+    accent: "#5E8C3A"
+  },
+  {
+    id: "bangmod",
+    slug: "bangmod",
+    sheetValue: "BANGMOD",
+    brand: "bm.swagclub",
+    shortName: "Bangmod",
+    fullName: "King Mongkut's University of Technology Thonburi",
+    accent: "#1F7A4F"
   },
   {
     id: "north-bangkok",
     slug: "north-bangkok",
-    name: "NORTH BANGKOK",
-    displayName: "KMUTNB North Bangkok",
-    accent: "#23638a"
+    sheetValue: "NORTH BANGKOK",
+    brand: "nb.swagclub",
+    shortName: "North Bangkok",
+    fullName: "King Mongkut's University of Technology North Bangkok",
+    accent: "#23638A"
+  },
+  {
+    id: "ladkrabang",
+    slug: "ladkrabang",
+    sheetValue: "LADKRABANG",
+    brand: "lkb.swagclub",
+    shortName: "Ladkrabang",
+    fullName: "King Mongkut's Institute of Technology Ladkrabang",
+    accent: "#B43A34"
   }
 ];
 

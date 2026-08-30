@@ -36,5 +36,29 @@ export const testProducts: Product[] = [
     availableSizes: ["M", "L", "XL"],
     active: true,
     sortOrder: 3
+  },
+  {
+    id: "kg-bm-oversize",
+    primaryUniversityId: "bangmod",
+    sellableUniversityIds: ["bangmod"],
+    name: "Charcoal Shirt",
+    colorName: "Charcoal",
+    priceThb: 250,
+    image: "/products/product-placeholder.svg",
+    availableSizes: ["M", "2XL", "3XL", "4XL", "5XL"],
+    active: true,
+    sortOrder: 4
+  },
+  {
+    id: "kg-msu-lychee",
+    primaryUniversityId: "mahasarakham",
+    sellableUniversityIds: ["mahasarakham"],
+    name: "Lychee Shirt",
+    colorName: "Lychee",
+    priceThb: 380,
+    image: "/products/product-placeholder.svg",
+    availableSizes: ["M", "L", "3XL"],
+    active: true,
+    sortOrder: 5
   }
 ];
