@@ -5,6 +5,7 @@ import {
   type Product,
   type UniversityId
 } from "@/lib/catalog";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
 import { readProductRows } from "./google-sheets";
 
 export type ProductSheetCell = string | number | boolean | null | undefined;
@@ -37,32 +38,24 @@ const universityBySheetValue: Record<string, UniversityId> = {
   "NORTH BANGKOK": "north-bangkok"
 };
 
-const PRODUCT_CACHE_TTL_MS = 60 * 1000;
-let productCache:
-  | {
-      expiresAt: number;
-      products: Product[];
-    }
-  | undefined;
+export const PRODUCT_CATALOG_CACHE_TAG = "kinggallery-product-catalog";
+
+const loadCachedProductCatalog = unstable_cache(
+  async () => normalizeProductRows(await readProductRows()),
+  ["kinggallery-product-catalog-v1"],
+  {
+    revalidate: 60,
+    tags: [PRODUCT_CATALOG_CACHE_TAG]
+  }
+);
 
 export async function getCachedProductCatalog() {
-  const now = Date.now();
-
-  if (productCache && productCache.expiresAt > now) {
-    return productCache.products;
-  }
-
-  const products = normalizeProductRows(await readProductRows());
-  productCache = {
-    expiresAt: now + PRODUCT_CACHE_TTL_MS,
-    products
-  };
-
-  return products;
+  return loadCachedProductCatalog();
 }
 
-export function clearProductCatalogCacheForTests() {
-  productCache = undefined;
+export function invalidateProductCatalogCache() {
+  revalidateTag(PRODUCT_CATALOG_CACHE_TAG, { expire: 0 });
+  revalidatePath("/", "page");
 }
 
 export function normalizeProductRows(rows: ProductSheetRow[]) {

@@ -1,9 +1,31 @@
 import { describe, expect, it, vi } from "vitest";
 import type { OrderSheetRows } from "@/lib/server/order-row-mapper";
+import type { AdminProduct } from "@/lib/admin-products";
 
 vi.mock("server-only", () => ({}));
 
 describe("Google Sheets adapter", () => {
+  const productHeader = [
+    "PRODUCT_ID",
+    "UNIVERSITY",
+    "JERSEY_COLOR",
+    "PRICE",
+    "IMAGE_URL",
+    "AVAILABLE_SIZES",
+    "ACTIVE",
+    "SORT_ORDER"
+  ];
+  const product: AdminProduct = {
+    productId: "kg-bm-matcha",
+    university: "BANGMOD",
+    jerseyColor: "Matcha",
+    priceThb: 450,
+    imageUrl: "https://store.public.blob.vercel-storage.com/matcha.png",
+    availableSizes: ["S", "M"],
+    active: true,
+    sortOrder: 2
+  };
+
   it("uses one batch update for Orders and OrderItems appends", async () => {
     const { appendRowsWithClient } = await import("@/lib/server/google-sheets");
     type BatchUpdateArgs = {
@@ -89,5 +111,89 @@ describe("Google Sheets adapter", () => {
       range: "'Products'!A:H"
     });
     expect(result).toBe(values);
+  });
+
+  it("appends a product without replacing the Products sheet", async () => {
+    const { appendProductRowWithClient } = await import(
+      "@/lib/server/google-sheets"
+    );
+    const append = vi.fn(async () => ({}));
+    const get = vi.fn(async () => ({ data: { values: [productHeader] } }));
+
+    await appendProductRowWithClient(
+      {
+        spreadsheets: { values: { get, append } }
+      } as unknown as Parameters<typeof appendProductRowWithClient>[0],
+      {
+        GOOGLE_ORDER_SPREADSHEET_ID: "spreadsheet-id",
+        GOOGLE_PRODUCTS_RANGE: "'Products'!A:H"
+      },
+      product
+    );
+
+    expect(append).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: "'Products'!A:H",
+        insertDataOption: "INSERT_ROWS",
+        requestBody: {
+          values: [[
+            "kg-bm-matcha",
+            "BANGMOD",
+            "Matcha",
+            450,
+            product.imageUrl,
+            "S,M",
+            "TRUE",
+            2
+          ]]
+        }
+      })
+    );
+  });
+
+  it("updates only the row resolved by PRODUCT_ID", async () => {
+    const { updateProductRowWithClient } = await import(
+      "@/lib/server/google-sheets"
+    );
+    const update = vi.fn(async () => ({}));
+    const get = vi.fn(async () => ({
+      data: {
+        values: [
+          productHeader,
+          ["other-id", "LADKRABANG", "Berry", 390, "/berry.svg", "M", "TRUE", 1],
+          ["kg-bm-matcha", "BANGMOD", "Old Matcha", 390, "/old.svg", "M", "TRUE", 4]
+        ]
+      }
+    }));
+
+    await updateProductRowWithClient(
+      {
+        spreadsheets: { values: { get, update } }
+      } as unknown as Parameters<typeof updateProductRowWithClient>[0],
+      {
+        GOOGLE_ORDER_SPREADSHEET_ID: "spreadsheet-id",
+        GOOGLE_PRODUCTS_RANGE: "'Products'!A:H"
+      },
+      "kg-bm-matcha",
+      { ...product, active: false, priceThb: 525 }
+    );
+
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        range: "'Products'!A3:H3",
+        requestBody: {
+          values: [[
+            "kg-bm-matcha",
+            "BANGMOD",
+            "Matcha",
+            525,
+            product.imageUrl,
+            "S,M",
+            "FALSE",
+            2
+          ]]
+        }
+      })
+    );
   });
 });

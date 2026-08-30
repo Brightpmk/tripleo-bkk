@@ -18,6 +18,11 @@ describe("server credential boundaries", () => {
     expect(envExample).toContain("GOOGLE_DRIVE_CLIENT_SECRET");
     expect(envExample).toContain("GOOGLE_DRIVE_REFRESH_TOKEN");
     expect(envExample).toContain("GOOGLE_DRIVE_SLIP_FOLDER_ID");
+    expect(envExample).toContain("ADMIN_PASSWORD_HASH");
+    expect(envExample).toContain("ADMIN_SESSION_SECRET");
+    expect(envExample).toContain("BLOB_STORE_ID");
+    expect(envExample).not.toContain("BLOB_READ_WRITE_TOKEN");
+    expect(envExample).not.toContain("ADMIN_PASSWORD=");
   });
 
   it("keeps Drive implementation server-only and private", () => {
@@ -36,5 +41,28 @@ describe("server credential boundaries", () => {
     expect(clientSource).not.toContain("GOOGLE_DRIVE_CLIENT_SECRET");
     expect(clientSource).not.toContain("GOOGLE_DRIVE_REFRESH_TOKEN");
     expect(clientSource).not.toContain("GOOGLE_DRIVE_SLIP_FOLDER_ID");
+  });
+
+  it("keeps all admin, Blob, Sheets, and Drive secrets out of client modules", () => {
+    const clientSources = [
+      "components/StorefrontApp.tsx",
+      "app/admin/AdminProductsManager.tsx",
+      "app/admin/login/AdminLoginForm.tsx"
+    ]
+      .map((file) => readFileSync(file, "utf8"))
+      .join("\n");
+    const secrets = [
+      "ADMIN_PASSWORD_HASH",
+      "ADMIN_SESSION_SECRET",
+      "BLOB_STORE_ID",
+      "VERCEL_OIDC_TOKEN",
+      "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
+      "GOOGLE_DRIVE_CLIENT_SECRET",
+      "GOOGLE_DRIVE_REFRESH_TOKEN"
+    ];
+
+    for (const secret of secrets) {
+      expect(clientSources).not.toContain(secret);
+    }
   });
 });

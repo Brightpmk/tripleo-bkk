@@ -7,6 +7,9 @@ import {
   type GoogleSheetsEnv
 } from "./env";
 import type { OrderSheetRows, SheetCell } from "./order-row-mapper";
+import type { AdminProductInput } from "@/lib/admin-products";
+import { ProductAdminError } from "./product-admin-error";
+import { getProductHeaderMap, productToSheetRow } from "./product-sheet";
 
 export type SheetsClient = sheets_v4.Sheets;
 
@@ -22,6 +25,76 @@ export async function readProductRows() {
   const sheets = getAuthenticatedSheetsClient(env);
 
   return readProductRowsWithClient(sheets, env);
+}
+
+export async function appendProductRow(product: AdminProductInput) {
+  const env = getGoogleSheetsEnv();
+  const sheets = getAuthenticatedSheetsClient(env);
+  await appendProductRowWithClient(sheets, env, product);
+}
+
+export async function updateProductRow(
+  productId: string,
+  product: AdminProductInput
+) {
+  const env = getGoogleSheetsEnv();
+  const sheets = getAuthenticatedSheetsClient(env);
+  await updateProductRowWithClient(sheets, env, productId, product);
+}
+
+export async function appendProductRowWithClient(
+  sheets: SheetsClient,
+  env: Pick<GoogleSheetsEnv, "GOOGLE_ORDER_SPREADSHEET_ID" | "GOOGLE_PRODUCTS_RANGE">,
+  product: AdminProductInput
+) {
+  const rows = await readProductRowsWithClient(sheets, env);
+  const headerRow = rows[0] ?? [];
+  const productIdIndex = getProductHeaderMap(headerRow).PRODUCT_ID;
+  const duplicate = rows
+    .slice(1)
+    .some((row) => String(row[productIdIndex] ?? "").trim() === product.productId);
+
+  if (duplicate) {
+    throw new ProductAdminError("PRODUCT_ID already exists.", 409, {
+      productId: "PRODUCT_ID already exists."
+    });
+  }
+
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: env.GOOGLE_ORDER_SPREADSHEET_ID,
+    range: env.GOOGLE_PRODUCTS_RANGE,
+    valueInputOption: "USER_ENTERED",
+    insertDataOption: "INSERT_ROWS",
+    requestBody: { values: [productToSheetRow(product, headerRow)] }
+  });
+}
+
+export async function updateProductRowWithClient(
+  sheets: SheetsClient,
+  env: Pick<GoogleSheetsEnv, "GOOGLE_ORDER_SPREADSHEET_ID" | "GOOGLE_PRODUCTS_RANGE">,
+  productId: string,
+  product: AdminProductInput
+) {
+  const rows = await readProductRowsWithClient(sheets, env);
+  const headerRow = rows[0] ?? [];
+  const productIdIndex = getProductHeaderMap(headerRow).PRODUCT_ID;
+  const rowIndex = rows.findIndex(
+    (row, index) =>
+      index > 0 && String(row[productIdIndex] ?? "").trim() === productId
+  );
+
+  if (rowIndex < 1) {
+    throw new ProductAdminError("Product was not found.", 404);
+  }
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: env.GOOGLE_ORDER_SPREADSHEET_ID,
+    range: getProductRowRange(env.GOOGLE_PRODUCTS_RANGE, rowIndex + 1),
+    valueInputOption: "USER_ENTERED",
+    requestBody: {
+      values: [productToSheetRow(product, headerRow, rows[rowIndex])]
+    }
+  });
 }
 
 export async function readProductRowsWithClient(
@@ -99,6 +172,17 @@ function getSheetNameFromRange(range: string) {
   const [sheetName] = range.split("!");
 
   return sheetName.replace(/^'/, "").replace(/'$/, "");
+}
+
+function getProductRowRange(range: string, rowNumber: number) {
+  const match = range.match(/^(.*)!\$?([A-Z]+)(?::\$?([A-Z]+))?$/i);
+
+  if (!match) {
+    throw new Error("GOOGLE_PRODUCTS_RANGE must use A:H-style column notation.");
+  }
+
+  const [, sheetName, startColumn, endColumn = startColumn] = match;
+  return `${sheetName}!${startColumn}${rowNumber}:${endColumn}${rowNumber}`;
 }
 
 function getSheetIdByTitle(

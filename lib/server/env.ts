@@ -23,6 +23,10 @@ export type GoogleDriveOAuthEnv = Record<
   string
 >;
 
+export type BlobStoreEnv = {
+  BLOB_STORE_ID: string;
+};
+
 export function getGoogleSheetsEnv(): GoogleSheetsEnv {
   const config = Object.fromEntries(
     requiredEnvKeys.map((key) => [key, process.env[key]?.trim() ?? ""])
@@ -55,6 +59,16 @@ export function getGoogleDriveEnv() {
   }
 
   return config;
+}
+
+export function getBlobStoreEnv(): BlobStoreEnv {
+  const storeId = process.env.BLOB_STORE_ID?.trim() ?? "";
+
+  if (!storeId) {
+    throw new Error("Missing required server environment variable: BLOB_STORE_ID");
+  }
+
+  return { BLOB_STORE_ID: storeId };
 }
 
 export function normalizePrivateKey(privateKey: string) {
