@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { AdminProduct } from "@/lib/admin-products";
+import { productImagePlaceholder } from "@/lib/catalog";
 import {
+  normalizeAdminProductRows,
   ProductAdminError,
   validateAdminProductInput
 } from "@/lib/server/product-admin";
@@ -45,6 +47,47 @@ describe("admin product validation", () => {
       expect(error).toBeInstanceOf(ProductAdminError);
       expect((error as InstanceType<typeof ProductAdminError>).fieldErrors).toHaveProperty(field);
     }
+  });
+
+  it("accepts the live Products Sheet extended sizes", () => {
+    expect(
+      validateAdminProductInput({
+        ...validProduct,
+        availableSizes: ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]
+      }).availableSizes
+    ).toEqual(["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]);
+  });
+
+  it("loads existing rows with extended sizes and placeholder images", () => {
+    const products = normalizeAdminProductRows([
+      [
+        "PRODUCT_ID",
+        "UNIVERSITY",
+        "JERSEY_COLOR",
+        "PRICE",
+        "IMAGE_URL",
+        "AVAILABLE_SIZES",
+        "ACTIVE",
+        "SORT_ORDER"
+      ],
+      [
+        "BANGMOD-MATCHA",
+        "BANGMOD",
+        "Matcha",
+        "390",
+        "",
+        "XS,S,M,L,XL,2XL,3XL,4XL,5XL",
+        "TRUE",
+        "1"
+      ]
+    ]);
+
+    expect(products).toHaveLength(1);
+    expect(products[0]).toMatchObject({
+      productId: "BANGMOD-MATCHA",
+      imageUrl: productImagePlaceholder,
+      availableSizes: ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]
+    });
   });
 });
 

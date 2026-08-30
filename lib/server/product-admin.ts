@@ -7,6 +7,7 @@ import {
   type AdminProductInput,
   type AdminUniversity
 } from "@/lib/admin-products";
+import { productImagePlaceholder } from "@/lib/catalog";
 import {
   appendProductRow,
   readProductRows,
@@ -135,7 +136,7 @@ export function normalizeAdminProductRows(rows: unknown[][]): AdminProduct[] {
         university: row[headerMap.UNIVERSITY],
         jerseyColor: row[headerMap.JERSEY_COLOR],
         priceThb: row[headerMap.PRICE],
-        imageUrl: row[headerMap.IMAGE_URL],
+        imageUrl: normalizeAdminImageUrl(row[headerMap.IMAGE_URL]),
         availableSizes: cellString(row[headerMap.AVAILABLE_SIZES]).split(","),
         active: row[headerMap.ACTIVE],
         sortOrder: row[headerMap.SORT_ORDER]
@@ -196,6 +197,12 @@ function isValidImageUrl(value: string) {
   } catch {
     return false;
   }
+}
+
+function normalizeAdminImageUrl(value: unknown) {
+  const imageUrl = asTrimmedString(value);
+
+  return isValidImageUrl(imageUrl) ? imageUrl : productImagePlaceholder;
 }
 
 function asTrimmedString(value: unknown) {
