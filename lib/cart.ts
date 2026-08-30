@@ -97,3 +97,8 @@ export function getCartItemSubtotal(item: CartItem) {
 export function getCartSubtotal(items: CartItem[]) {
   return items.reduce((total, item) => total + getCartItemSubtotal(item), 0);
 }
+
+export function getCartTotalQuantity(items: CartItem[]) {
+  return items.reduce((total, item) => total + item.quantity, 0);
+}
+

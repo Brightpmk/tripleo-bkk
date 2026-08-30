@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  getAvailableDeliveryMethods,
   getProductsForUniversity,
   getUniversityById,
+  isDeliveryMethodAllowed,
   universities,
   universityIds,
   universitySheetValues
@@ -54,6 +56,20 @@ describe("supported universities", () => {
     universityIds.forEach((id) => {
       expect(getUniversityById(id)?.id).toBe(id);
     });
+  });
+
+  it("only allows pickup for Bangmod, while all other universities only support shipping", () => {
+    expect(getAvailableDeliveryMethods("bangmod")).toEqual(["pickup", "shipping"]);
+    expect(isDeliveryMethodAllowed("bangmod", "pickup")).toBe(true);
+    expect(isDeliveryMethodAllowed("bangmod", "shipping")).toBe(true);
+
+    universityIds
+      .filter((id) => id !== "bangmod")
+      .forEach((id) => {
+        expect(getAvailableDeliveryMethods(id)).toEqual(["shipping"]);
+        expect(isDeliveryMethodAllowed(id, "pickup")).toBe(false);
+        expect(isDeliveryMethodAllowed(id, "shipping")).toBe(true);
+      });
   });
 });
 

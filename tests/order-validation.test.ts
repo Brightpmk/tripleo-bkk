@@ -231,7 +231,75 @@ describe("server-side size surcharge", () => {
     expect(result.ok ? result.order.itemSubtotalThb : undefined).toBe(530);
   });
 
-  it("adds the flat 50 THB shipping fee on top of surcharged items", () => {
+  it("rejects pickup delivery method for non-Bangmod universities", () => {
+    const result = validateOrderSubmission(
+      {
+        ...baseRequest,
+        universityId: "ladkrabang",
+        checkout: {
+          ...baseRequest.checkout,
+          deliveryMethod: "pickup",
+          shippingAddress: ""
+        },
+        items: [{ productId: "p-ladkrabang", size: "M", quantity: 1 }]
+      },
+      [
+        ...testProducts,
+        {
+          id: "p-ladkrabang",
+          primaryUniversityId: "ladkrabang",
+          sellableUniversityIds: ["ladkrabang"],
+          name: "LKB Shirt",
+          colorName: "Orange",
+          priceThb: 390,
+          image: "/lkb.svg",
+          availableSizes: ["M"],
+          active: true,
+          sortOrder: 1
+        }
+      ]
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.ok ? undefined : result.fieldErrors.deliveryMethod).toBe(
+      "Delivery is the only available option for this university."
+    );
+  });
+
+  it("accepts shipping delivery method for non-Bangmod universities", () => {
+    const result = validateOrderSubmission(
+      {
+        ...baseRequest,
+        universityId: "ladkrabang",
+        checkout: {
+          ...baseRequest.checkout,
+          deliveryMethod: "shipping",
+          shippingAddress: "123 Ladkrabang Rd"
+        },
+        items: [{ productId: "p-ladkrabang", size: "M", quantity: 1 }]
+      },
+      [
+        ...testProducts,
+        {
+          id: "p-ladkrabang",
+          primaryUniversityId: "ladkrabang",
+          sellableUniversityIds: ["ladkrabang"],
+          name: "LKB Shirt",
+          colorName: "Orange",
+          priceThb: 390,
+          image: "/lkb.svg",
+          availableSizes: ["M"],
+          active: true,
+          sortOrder: 1
+        }
+      ]
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.ok ? result.order.shippingFeeThb : undefined).toBe(50);
+  });
+
+  it("calculates tiered shipping fee (+10 THB per extra shirt over 10) on order submission", () => {
     const result = validateOrderSubmission(
       {
         ...baseRequest,
@@ -241,17 +309,17 @@ describe("server-side size surcharge", () => {
           shippingAddress: "123 Test Road"
         },
         items: [
-          { productId: "kg-bm-oversize", size: "4XL", quantity: 2 },
-          { productId: "kg-bm-matcha", size: "M", quantity: 1 }
+          { productId: "kg-bm-matcha", size: "M", quantity: 12 }
         ]
       },
       testProducts
     );
 
     expect(result.ok).toBe(true);
-    // (265 * 2) + 390 = 920, plus 50 THB shipping
-    expect(result.ok ? result.order.itemSubtotalThb : undefined).toBe(920);
-    expect(result.ok ? result.order.shippingFeeThb : undefined).toBe(50);
-    expect(result.ok ? result.order.finalTotalThb : undefined).toBe(970);
+    // 390 * 12 = 4680, shipping: 50 + (12 - 10) * 10 = 70
+    expect(result.ok ? result.order.itemSubtotalThb : undefined).toBe(4680);
+    expect(result.ok ? result.order.shippingFeeThb : undefined).toBe(70);
+    expect(result.ok ? result.order.finalTotalThb : undefined).toBe(4750);
   });
 });
+

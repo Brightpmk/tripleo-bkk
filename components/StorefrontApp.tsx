@@ -3,8 +3,10 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  getAvailableDeliveryMethods,
   getProductsForUniversity,
   getUniversityById,
+  isDeliveryMethodAllowed,
   productImagePlaceholder,
   universities,
   type ShirtSize,
@@ -15,6 +17,7 @@ import {
 import {
   addCartItem,
   getCartItemSubtotal,
+  getCartTotalQuantity,
   removeCartItem,
   updateCartQuantity,
   type CartItem
@@ -27,6 +30,7 @@ import {
 import type { OrderSubmissionResult } from "@/lib/order-submission";
 import {
   calculateOrderTotals,
+  getShippingFee,
   type DeliveryMethod
 } from "@/lib/pricing";
 import { acceptedSlipMimeTypes, validateSlipFile } from "@/lib/slip";
@@ -168,6 +172,14 @@ export function StorefrontApp({
       setSubmissionKey(createSubmissionKey());
     }
 
+    const allowedMethods = getAvailableDeliveryMethods(universityId);
+    if (!allowedMethods.includes(checkout.deliveryMethod)) {
+      setCheckout((current) => ({
+        ...current,
+        deliveryMethod: allowedMethods[0]
+      }));
+    }
+
     setSelectedUniversityId(universityId);
     setStep("shop");
     window.history.replaceState(null, "", `#shop-${universityId}`);
@@ -217,6 +229,16 @@ export function StorefrontApp({
 
     if (!checkout.phone.trim()) {
       nextErrors.phone = "Phone number is required.";
+    }
+
+    if (
+      selectedUniversityId &&
+      !isDeliveryMethodAllowed(selectedUniversityId, checkout.deliveryMethod)
+    ) {
+      nextErrors.deliveryMethod =
+        selectedUniversityId === "bangmod"
+          ? "Select pickup or shipping."
+          : "Delivery is the only available option for this university.";
     }
 
     if (
@@ -436,6 +458,7 @@ export function StorefrontApp({
             <CheckoutSection
               checkout={checkout}
               errors={formErrors}
+              items={cartItems}
               totals={totals}
               university={selectedUniversity}
               onChange={setCheckout}
@@ -903,7 +926,9 @@ function CartSection({
               </div>
             </dl>
             <p className="summary-note">
-              Delivery is chosen on the next step. Shipping adds 50 THB.
+              {university.id === "bangmod"
+                ? "Delivery is chosen on the next step. Pickup is free, or shipping is 50 THB (1–10 shirts, +10 THB per extra shirt)."
+                : "Delivery is chosen on the next step. Shipping is 50 THB (1–10 shirts, +10 THB per extra shirt)."}
             </p>
           </div>
 
@@ -936,6 +961,7 @@ function CartSection({
 function CheckoutSection({
   checkout,
   errors,
+  items,
   totals,
   university,
   onChange,
@@ -943,11 +969,16 @@ function CheckoutSection({
 }: {
   checkout: CheckoutDetails;
   errors: Record<string, string>;
+  items: CartItem[];
   totals: ReturnType<typeof calculateOrderTotals>;
   university: University;
   onChange: (checkout: CheckoutDetails) => void;
   onContinue: () => void;
 }) {
+  const availableDeliveryMethods = getAvailableDeliveryMethods(university.id);
+  const totalItemCount = getCartTotalQuantity(items);
+  const shippingFeePreview = getShippingFee("shipping", totalItemCount);
+
   return (
     <section className="step-section">
       <div className="section-head">
@@ -1040,7 +1071,7 @@ function CheckoutSection({
             <fieldset>
               <legend className="vh">Choose a delivery method</legend>
               <div className="choice-list">
-                {(["pickup", "shipping"] as DeliveryMethod[]).map((method) => {
+                {availableDeliveryMethods.map((method) => {
                   const selected = checkout.deliveryMethod === method;
 
                   return (
@@ -1064,13 +1095,15 @@ function CheckoutSection({
                             {method === "pickup" ? "University pickup" : "Shipping"}
                           </span>
                           <span className="choice-price">
-                            {method === "pickup" ? "Free" : "+50 THB"}
+                            {method === "pickup"
+                              ? "Free"
+                              : `+${formatThb(shippingFeePreview)}`}
                           </span>
                         </span>
                         <span className="choice-desc">
                           {method === "pickup"
                             ? `Collect at ${university.shortName}.`
-                            : "Delivered to your address — flat rate per order."}
+                            : "Delivered to your address (50 THB for 1–10 shirts, +10 THB per extra shirt)."}
                         </span>
                       </span>
                     </label>
@@ -1078,6 +1111,12 @@ function CheckoutSection({
                 })}
               </div>
             </fieldset>
+
+            {errors.deliveryMethod ? (
+              <span className="field-error" id="checkout-delivery-error">
+                {errors.deliveryMethod}
+              </span>
+            ) : null}
 
             {checkout.deliveryMethod === "shipping" ? (
               <div className="field">

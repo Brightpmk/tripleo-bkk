@@ -1,6 +1,7 @@
 import {
   getProductById,
   getUniversityById,
+  isDeliveryMethodAllowed,
   type Product,
   type UniversityId
 } from "@/lib/catalog";
@@ -59,11 +60,17 @@ export function validateOrderSubmission(
 
   if (!isDeliveryMethod(deliveryMethod)) {
     fieldErrors.deliveryMethod = "Select pickup or shipping.";
+  } else if (university && !isDeliveryMethodAllowed(university.id, deliveryMethod)) {
+    fieldErrors.deliveryMethod =
+      university.id === "bangmod"
+        ? "Select pickup or shipping."
+        : "Delivery is the only available option for this university.";
   }
 
   if (deliveryMethod === "shipping" && !shippingAddress) {
     fieldErrors.shippingAddress = "Shipping address is required.";
   }
+
 
   if (request.slipSelected !== true) {
     fieldErrors.slipSelected = "Payment slip must be selected.";
