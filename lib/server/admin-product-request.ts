@@ -18,7 +18,10 @@ export function parseProductPayload(value: FormDataEntryValue | null) {
   }
 }
 
-export function productErrorResponse(error: unknown) {
+export function productErrorResponse(
+  error: unknown,
+  fallbackMessage = "Product could not be saved."
+) {
   if (error instanceof ProductAdminError) {
     return Response.json(
       {
@@ -33,8 +36,5 @@ export function productErrorResponse(error: unknown) {
   console.error("Admin product mutation failed", {
     errorName: error instanceof Error ? error.name : "UnknownError"
   });
-  return Response.json(
-    { ok: false, message: "Product could not be saved." },
-    { status: 500 }
-  );
+  return Response.json({ ok: false, message: fallbackMessage }, { status: 500 });
 }

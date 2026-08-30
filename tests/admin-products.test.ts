@@ -103,6 +103,7 @@ describe("admin product operations", () => {
       listProducts: vi.fn(async () => []),
       createProduct,
       updateProduct: vi.fn(),
+      deleteProduct: vi.fn(),
       uploadImage: vi.fn(async () => "https://store.public.blob.vercel-storage.com/products/new.png"),
       deleteImage: vi.fn(),
       invalidateCatalog
@@ -126,6 +127,7 @@ describe("admin product operations", () => {
           listProducts: vi.fn(async () => [validProduct]),
           createProduct: vi.fn(),
           updateProduct: vi.fn(),
+          deleteProduct: vi.fn(),
           uploadImage,
           deleteImage: vi.fn(),
           invalidateCatalog: vi.fn()
@@ -155,6 +157,7 @@ describe("admin product operations", () => {
         listProducts: vi.fn(async () => [validProduct]),
         createProduct: vi.fn(),
         updateProduct,
+        deleteProduct: vi.fn(),
         uploadImage: vi.fn(),
         deleteImage: vi.fn(),
         invalidateCatalog: vi.fn()

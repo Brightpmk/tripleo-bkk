@@ -42,6 +42,12 @@ export async function updateProductRow(
   await updateProductRowWithClient(sheets, env, productId, product);
 }
 
+export async function deleteProductRow(productId: string) {
+  const env = getGoogleSheetsEnv();
+  const sheets = getAuthenticatedSheetsClient(env);
+  await deleteProductRowWithClient(sheets, env, productId);
+}
+
 export async function appendProductRowWithClient(
   sheets: SheetsClient,
   env: Pick<GoogleSheetsEnv, "GOOGLE_ORDER_SPREADSHEET_ID" | "GOOGLE_PRODUCTS_RANGE">,
@@ -93,6 +99,75 @@ export async function updateProductRowWithClient(
     valueInputOption: "USER_ENTERED",
     requestBody: {
       values: [productToSheetRow(product, headerRow, rows[rowIndex])]
+    }
+  });
+}
+
+/**
+ * Permanently removes one Products row, resolved by PRODUCT_ID.
+ *
+ * The row number is never taken from the caller: the sheet is re-read and
+ * the row is located by its PRODUCT_ID cell immediately before deletion, so
+ * a concurrent edit cannot cause the wrong row to be removed. The header row
+ * (index 0) is excluded from the search and can never be deleted. Only the
+ * Products tab is touched — Orders and OrderItems are untouched.
+ */
+export async function deleteProductRowWithClient(
+  sheets: SheetsClient,
+  env: Pick<GoogleSheetsEnv, "GOOGLE_ORDER_SPREADSHEET_ID" | "GOOGLE_PRODUCTS_RANGE">,
+  productId: string
+) {
+  const rows = await readProductRowsWithClient(sheets, env);
+  const headerRow = rows[0] ?? [];
+  const productIdIndex = getProductHeaderMap(headerRow).PRODUCT_ID;
+  const matchingRowIndexes = rows.flatMap((row, index) =>
+    index > 0 && String(row[productIdIndex] ?? "").trim() === productId
+      ? [index]
+      : []
+  );
+
+  if (matchingRowIndexes.length === 0) {
+    throw new ProductAdminError("Product was not found.", 404);
+  }
+
+  // Refuse to guess which duplicate is the real one — deleting the wrong
+  // row is unrecoverable. The admin fixes the catalog first.
+  if (matchingRowIndexes.length > 1) {
+    throw new ProductAdminError(
+      "This product ID appears more than once in the catalog, so it was not deleted. Remove the duplicate entry first.",
+      409,
+      { productId: "Duplicate product ID in the catalog." }
+    );
+  }
+
+  const spreadsheetId = env.GOOGLE_ORDER_SPREADSHEET_ID;
+  const spreadsheet = await sheets.spreadsheets.get({
+    spreadsheetId,
+    fields: "sheets.properties(sheetId,title)"
+  });
+  const productsSheetId = getSheetIdByTitle(
+    spreadsheet.data.sheets,
+    getSheetNameFromRange(env.GOOGLE_PRODUCTS_RANGE)
+  );
+  // GOOGLE_PRODUCTS_RANGE is column-only notation (see getProductRowRange),
+  // so range index N is sheet row N + 1, i.e. zero-based dimension index N.
+  const startIndex = matchingRowIndexes[0];
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: productsSheetId,
+              dimension: "ROWS",
+              startIndex,
+              endIndex: startIndex + 1
+            }
+          }
+        }
+      ]
     }
   });
 }

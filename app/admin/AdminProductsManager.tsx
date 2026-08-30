@@ -10,6 +10,8 @@ import {
   type AdminUniversity
 } from "@/lib/admin-products";
 
+type AdminNotice = { tone: "success" | "warning"; text: string };
+
 type FilterUniversity = AdminUniversity | "ALL";
 type FilterStatus = "ALL" | "ACTIVE" | "INACTIVE";
 
@@ -39,7 +41,7 @@ export function AdminProductsManager({
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("ALL");
   const [editing, setEditing] = useState<AdminProduct | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [notice, setNotice] = useState<AdminNotice | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const filteredProducts = useMemo(() => {
@@ -71,7 +73,28 @@ export function AdminProductsManager({
           );
       return next.sort((a, b) => a.sortOrder - b.sortOrder);
     });
-    setNotice(created ? "Product created." : "Product updated.");
+    setNotice({
+      tone: "success",
+      text: created ? "Product created." : "Product updated."
+    });
+    closeEditor();
+  }
+
+  function handleDeleted(product: AdminProduct, imageCleanup: string) {
+    setProducts((current) =>
+      current.filter((item) => item.productId !== product.productId)
+    );
+    setNotice(
+      imageCleanup === "failed"
+        ? {
+            tone: "warning",
+            text: `"${product.shirtColor}" was deleted, but its image could not be removed from storage. It can be cleaned up manually later.`
+          }
+        : {
+            tone: "success",
+            text: `"${product.shirtColor}" was permanently deleted.`
+          }
+    );
     closeEditor();
   }
 
@@ -112,7 +135,7 @@ export function AdminProductsManager({
             className="admin-button admin-button-primary"
             type="button"
             onClick={() => {
-              setNotice("");
+              setNotice(null);
               setIsCreating(true);
               setEditing(null);
             }}
@@ -122,8 +145,13 @@ export function AdminProductsManager({
         </div>
 
         {notice ? (
-          <p className="admin-notice" role="status">
-            {notice}
+          <p
+            className={
+              notice.tone === "warning" ? "admin-warning" : "admin-notice"
+            }
+            role="status"
+          >
+            {notice.text}
           </p>
         ) : null}
         {loadError ? (
@@ -237,7 +265,7 @@ export function AdminProductsManager({
                       className="admin-row-edit"
                       type="button"
                       onClick={() => {
-                        setNotice("");
+                        setNotice(null);
                         setEditing(product);
                         setIsCreating(false);
                       }}
@@ -265,6 +293,7 @@ export function AdminProductsManager({
           created={isCreating}
           onCancel={closeEditor}
           onSaved={handleSaved}
+          onDeleted={handleDeleted}
         />
       ) : null}
     </main>
@@ -275,19 +304,24 @@ function ProductEditor({
   product,
   created,
   onCancel,
-  onSaved
+  onSaved,
+  onDeleted
 }: {
   product: AdminProduct;
   created: boolean;
   onCancel: () => void;
   onSaved: (product: AdminProduct, created: boolean) => void;
+  onDeleted: (product: AdminProduct, imageCleanup: string) => void;
 }) {
   const [draft, setDraft] = useState(product);
   const [image, setImage] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const dialogRef = useRef<HTMLElement>(null);
+  const busy = saving || deleting;
 
   // Lock the page behind the drawer and move focus into it — once.
   useEffect(() => {
@@ -302,14 +336,52 @@ function ProductEditor({
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape" && !saving) {
-        onCancel();
+      if (event.key !== "Escape" || busy) {
+        return;
       }
+
+      // Escape backs out of the confirmation first, not the whole editor.
+      if (confirmingDelete) {
+        setConfirmingDelete(false);
+        return;
+      }
+
+      onCancel();
     }
 
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onCancel, saving]);
+  }, [busy, confirmingDelete, onCancel]);
+
+  async function deleteProduct() {
+    setDeleting(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/products/${encodeURIComponent(product.productId)}`,
+        { method: "DELETE" }
+      );
+      const result = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        imageCleanup?: string;
+      };
+
+      if (!response.ok || !result.ok) {
+        setConfirmingDelete(false);
+        setMessage(result.message || "Product could not be deleted.");
+        return;
+      }
+
+      onDeleted(product, result.imageCleanup ?? "skipped");
+    } catch {
+      setConfirmingDelete(false);
+      setMessage("Product could not be deleted. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   function update<K extends keyof AdminProduct>(key: K, value: AdminProduct[K]) {
     setDraft((current) => ({ ...current, [key]: value }));
@@ -369,7 +441,7 @@ function ProductEditor({
       className="admin-editor-backdrop"
       role="presentation"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !saving) {
+        if (event.target === event.currentTarget && !busy) {
           onCancel();
         }
       }}
@@ -395,6 +467,7 @@ function ProductEditor({
             type="button"
             className="admin-close-button"
             onClick={onCancel}
+            disabled={busy}
             aria-label="Close editor"
           >
             ×
@@ -527,24 +600,128 @@ function ProductEditor({
           </div>
 
           <div className="admin-form-actions">
+            {created ? null : (
+              <button
+                type="button"
+                className="admin-delete-link"
+                onClick={() => setConfirmingDelete(true)}
+                disabled={busy}
+              >
+                Delete product
+              </button>
+            )}
+            <span className="admin-form-actions-spacer" />
             <button
               type="button"
               className="admin-button admin-button-secondary"
               onClick={onCancel}
-              disabled={saving}
+              disabled={busy}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="admin-button admin-button-primary"
-              disabled={saving}
+              disabled={busy}
             >
               {saving ? "Saving…" : "Save product"}
             </button>
           </div>
         </form>
       </section>
+
+      {confirmingDelete ? (
+        <DeleteConfirmation
+          product={product}
+          deleting={deleting}
+          onCancel={() => setConfirmingDelete(false)}
+          onConfirm={deleteProduct}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function DeleteConfirmation({
+  product,
+  deleting,
+  onCancel,
+  onConfirm
+}: {
+  product: AdminProduct;
+  deleting: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const confirmRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    confirmRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      className="admin-confirm-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !deleting) {
+          onCancel();
+        }
+      }}
+    >
+      <div
+        className="admin-confirm"
+        ref={confirmRef}
+        tabIndex={-1}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="admin-confirm-title"
+        aria-describedby="admin-confirm-copy"
+      >
+        <h2 id="admin-confirm-title">Delete this product?</h2>
+        <p id="admin-confirm-copy">
+          This permanently removes the product from the product database. This
+          action cannot be undone.
+        </p>
+
+        <dl className="admin-confirm-facts">
+          <div>
+            <dt>Product ID</dt>
+            <dd>{product.productId}</dd>
+          </div>
+          <div>
+            <dt>University</dt>
+            <dd>{getUniversityLabel(product.university)}</dd>
+          </div>
+          <div>
+            <dt>Shirt color</dt>
+            <dd>{product.shirtColor}</dd>
+          </div>
+        </dl>
+
+        <p className="admin-confirm-note">
+          Past orders keep their own record of this shirt and are not affected.
+        </p>
+
+        <div className="admin-confirm-actions">
+          <button
+            type="button"
+            className="admin-button admin-button-secondary"
+            onClick={onCancel}
+            disabled={deleting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button-danger"
+            onClick={onConfirm}
+            disabled={deleting}
+          >
+            {deleting ? "Deleting…" : "Delete product"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

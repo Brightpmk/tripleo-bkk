@@ -3,6 +3,7 @@ import "server-only";
 import type { AdminProduct } from "@/lib/admin-products";
 import {
   createAdminProduct,
+  deleteAdminProduct,
   listAdminProducts,
   type RawProductInput,
   updateAdminProduct,
@@ -11,7 +12,8 @@ import {
 import { ProductAdminError } from "./product-admin-error";
 import {
   deleteProductImageBestEffort,
-  uploadProductImage
+  uploadProductImage,
+  type ProductImageCleanupStatus
 } from "./product-image";
 import { invalidateProductCatalogCache } from "./product-catalog";
 
@@ -19,6 +21,7 @@ export type ProductOperationDependencies = {
   listProducts: typeof listAdminProducts;
   createProduct: typeof createAdminProduct;
   updateProduct: typeof updateAdminProduct;
+  deleteProduct: typeof deleteAdminProduct;
   uploadImage: typeof uploadProductImage;
   deleteImage: typeof deleteProductImageBestEffort;
   invalidateCatalog: typeof invalidateProductCatalogCache;
@@ -28,6 +31,7 @@ const defaultDependencies: ProductOperationDependencies = {
   listProducts: listAdminProducts,
   createProduct: createAdminProduct,
   updateProduct: updateAdminProduct,
+  deleteProduct: deleteAdminProduct,
   uploadImage: uploadProductImage,
   deleteImage: deleteProductImageBestEffort,
   invalidateCatalog: invalidateProductCatalogCache
@@ -112,6 +116,49 @@ export async function updateAdminProductWithOptionalImage(
 
   invalidateCatalogSafely(dependencies.invalidateCatalog);
   return updated;
+}
+
+export type DeleteAdminProductResult = {
+  product: AdminProduct;
+  imageCleanup: ProductImageCleanupStatus;
+};
+
+/**
+ * Permanently deletes a product, then cleans up its Blob image.
+ *
+ * Order matters and is deliberate:
+ *   1. read the product so its IMAGE_URL is preserved before the row is gone
+ *   2. delete the Products row — if this throws, nothing else has happened
+ *      and the Blob image is left completely untouched
+ *   3. only on success, best-effort Blob cleanup that can never roll the
+ *      deletion back; a failure is reported to the admin, not thrown
+ *
+ * Orders and OrderItems are never touched: they store their own historical
+ * snapshot of colour, size, quantity and unit price.
+ */
+export async function deleteAdminProductWithImageCleanup(
+  productId: string,
+  dependencies: ProductOperationDependencies = defaultDependencies
+): Promise<DeleteAdminProductResult> {
+  const products = await dependencies.listProducts();
+  const existing = products.find((product) => product.productId === productId);
+
+  if (!existing) {
+    throw new ProductAdminError("Product was not found.", 404);
+  }
+
+  // 1. Preserve the image URL while the row still exists.
+  const imageUrl = existing.imageUrl;
+
+  // 2. Sheet first. A throw here propagates and skips cleanup entirely.
+  await dependencies.deleteProduct(productId);
+
+  // 3. Committed. Cleanup is advisory from here on.
+  const cleanup = await dependencies.deleteImage(imageUrl);
+
+  invalidateCatalogSafely(dependencies.invalidateCatalog);
+
+  return { product: existing, imageCleanup: cleanup.status };
 }
 
 function invalidateCatalogSafely(invalidate: () => void) {

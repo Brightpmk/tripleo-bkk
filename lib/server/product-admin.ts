@@ -10,6 +10,7 @@ import {
 import { productImagePlaceholder } from "@/lib/catalog";
 import {
   appendProductRow,
+  deleteProductRow,
   readProductRows,
   updateProductRow
 } from "./google-sheets";
@@ -18,6 +19,8 @@ import { getProductHeaderMap } from "./product-sheet";
 
 export { ProductAdminError } from "./product-admin-error";
 export type RawProductInput = Record<string, unknown>;
+
+const productIdPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$/;
 
 export async function listAdminProducts() {
   return normalizeAdminProductRows(await readProductRows());
@@ -45,6 +48,18 @@ export async function updateAdminProduct(
   return product;
 }
 
+export async function deleteAdminProduct(productId: string) {
+  if (!isValidProductId(productId)) {
+    throw new ProductAdminError("Product was not found.", 404);
+  }
+
+  await deleteProductRow(productId);
+}
+
+export function isValidProductId(value: unknown) {
+  return productIdPattern.test(typeof value === "string" ? value.trim() : "");
+}
+
 export function validateAdminProductInput(raw: RawProductInput): AdminProductInput {
   const fieldErrors: Record<string, string> = {};
   const productId = asTrimmedString(raw.productId);
@@ -56,7 +71,7 @@ export function validateAdminProductInput(raw: RawProductInput): AdminProductInp
   const active = parseSubmittedBoolean(raw.active);
   const sortOrder = parseFiniteNumber(raw.sortOrder);
 
-  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$/.test(productId)) {
+  if (!productIdPattern.test(productId)) {
     fieldErrors.productId =
       "Use 3–64 letters, numbers, hyphens, or underscores.";
   }
