@@ -1149,16 +1149,30 @@ function PaymentSection({
         <div className="qr-block">
           <div className="qr-card">
             <Image
-              src="/payment/qr-placeholder.svg"
-              alt="Tripleo.bkk payment QR code"
-              width={420}
-              height={420}
+              src="/payment/promptpay-qr.jpg"
+              alt="Thai QR PromptPay code for Tripleo.bkk. Accepts all banks."
+              width={885}
+              height={1200}
               priority
+              // Served as-is: re-encoding a QR can cost it scan reliability.
+              unoptimized
             />
           </div>
+          <p className="qr-payee">
+            <span className="vh">Payee: </span>
+            นาย กรวิวัฒน์ แจ้งกระจ่าง · xxx-x-x1113-x
+          </p>
+          <a
+            className="qr-save"
+            href="/payment/promptpay-qr.jpg"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open full size to save
+          </a>
           <p className="qr-note">
-            Scan with any Thai banking app, or screenshot and upload from your
-            gallery.
+            Scan with any Thai banking app, or save this image and use your
+            bank&apos;s scan-from-gallery option.
           </p>
         </div>
 
