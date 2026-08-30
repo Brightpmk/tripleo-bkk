@@ -4,7 +4,7 @@ import { ProductAdminError } from "./product-admin-error";
 export const PRODUCT_SHEET_HEADERS = [
   "PRODUCT_ID",
   "UNIVERSITY",
-  "JERSEY_COLOR",
+  "SHIRT_COLOR",
   "PRICE",
   "IMAGE_URL",
   "AVAILABLE_SIZES",
@@ -44,7 +44,7 @@ export function productToSheetRow(
 
   row[map.PRODUCT_ID] = product.productId;
   row[map.UNIVERSITY] = product.university;
-  row[map.JERSEY_COLOR] = product.jerseyColor;
+  row[map.SHIRT_COLOR] = product.shirtColor;
   row[map.PRICE] = product.priceThb;
   row[map.IMAGE_URL] = product.imageUrl;
   row[map.AVAILABLE_SIZES] = product.availableSizes.join(",");

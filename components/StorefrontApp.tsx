@@ -7,7 +7,7 @@ import {
   getUniversityById,
   productImagePlaceholder,
   universities,
-  type JerseySize,
+  type ShirtSize,
   type Product,
   type UniversityId
 } from "@/lib/catalog";
@@ -33,7 +33,7 @@ import { acceptedSlipMimeTypes, validateSlipFile } from "@/lib/slip";
 type Step = "select" | "shop" | "cart" | "checkout" | "payment" | "review" | "success";
 
 type ProductChoice = {
-  size: JerseySize;
+  size: ShirtSize;
   quantity: number;
 };
 
@@ -292,7 +292,7 @@ export function StorefrontApp({
               setStep("select");
             }}
           >
-            KingGallery.Studio
+            SWAGCLUB
           </button>
           {selectedUniversity ? (
             <span className="university-badge">
@@ -316,10 +316,10 @@ export function StorefrontApp({
       {step === "select" ? (
         <section className="landing" id="universities">
           <div className="landing-header">
-            <p className="section-label">University Jersey Collection</p>
-            <h1 className="display-xl">Choose Your Campus</h1>
+            <p className="section-label">Premium Streetwear</p>
+            <h1 className="display-xl">Select Your Campus</h1>
             <p className="body-lg">
-              Select your university to explore our exclusive jersey collection.
+              Choose your campus to explore our exclusive shirt collection.
               Premium designs crafted for campus culture.
             </p>
           </div>
@@ -468,7 +468,7 @@ function ShopSection({
       <div className="section-header">
         <div className="section-header-text">
           <p className="section-label">{selectedUniversityName}</p>
-          <h2 className="display-lg">Jersey Collection</h2>
+          <h2 className="display-lg">The Collection</h2>
         </div>
       </div>
 
@@ -481,7 +481,7 @@ function ShopSection({
       ) : products.length === 0 ? (
         <div className="empty-state">
           <div className="empty-state-icon">🏷️</div>
-          <h3>No jerseys available</h3>
+          <h3>No shirts available</h3>
           <p>Check back soon for new releases.</p>
         </div>
       ) : (
@@ -636,9 +636,9 @@ function CartSection({
         <div className="empty-state">
           <div className="empty-state-icon">🛒</div>
           <h3>Your cart is empty</h3>
-          <p>Browse our collection and find your perfect jersey.</p>
+          <p>Browse our collection and find your perfect shirt.</p>
           <button className="btn btn-primary" type="button" onClick={onShop}>
-            Browse Jerseys
+            Browse Shirts
           </button>
         </div>
       ) : (
@@ -914,7 +914,7 @@ function PaymentSection({
         <div className="qr-wrapper">
           <Image
             src="/payment/qr-placeholder.svg"
-            alt="KingGallery.Studio payment QR placeholder"
+            alt="SWAGCLUB payment QR placeholder"
             width={420}
             height={420}
           />

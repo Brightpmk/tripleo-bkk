@@ -21,7 +21,7 @@ export class ProductCatalogError extends Error {
 const productHeaders = [
   "PRODUCT_ID",
   "UNIVERSITY",
-  "JERSEY_COLOR",
+  "SHIRT_COLOR",
   "PRICE",
   "IMAGE_URL",
   "AVAILABLE_SIZES",
@@ -38,11 +38,11 @@ const universityBySheetValue: Record<string, UniversityId> = {
   "NORTH BANGKOK": "north-bangkok"
 };
 
-export const PRODUCT_CATALOG_CACHE_TAG = "kinggallery-product-catalog";
+export const PRODUCT_CATALOG_CACHE_TAG = "swagclub-product-catalog";
 
 const loadCachedProductCatalog = unstable_cache(
   async () => normalizeProductRows(await readProductRows()),
-  ["kinggallery-product-catalog-v1"],
+  ["swagclub-product-catalog-v1"],
   {
     revalidate: 60,
     tags: [PRODUCT_CATALOG_CACHE_TAG]
@@ -113,7 +113,7 @@ function normalizeProductRow(
   rowNumber: number
 ): Product | null {
   const productId = cellToString(row[headerMap.PRODUCT_ID]);
-  const colorName = cellToString(row[headerMap.JERSEY_COLOR]);
+  const colorName = cellToString(row[headerMap.SHIRT_COLOR]);
   const active = parseActive(row[headerMap.ACTIVE]);
 
   if (active !== true) {
@@ -126,7 +126,7 @@ function normalizeProductRow(
   }
 
   if (!colorName) {
-    logSkippedProduct(rowNumber, "missing JERSEY_COLOR", productId);
+    logSkippedProduct(rowNumber, "missing SHIRT_COLOR", productId);
     return null;
   }
 
@@ -155,7 +155,7 @@ function normalizeProductRow(
     id: productId,
     primaryUniversityId: universityId,
     sellableUniversityIds: [universityId],
-    name: `${colorName} Jersey`,
+    name: `${colorName} Shirt`,
     colorName,
     priceThb,
     image: normalizeImageUrl(row[headerMap.IMAGE_URL]),

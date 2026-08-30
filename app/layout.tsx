@@ -15,9 +15,9 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "KingGallery.Studio — University Jersey Collection",
+  title: "SWAGCLUB — Premium Streetwear",
   description:
-    "Premium university jersey shirts for BANGMOD, LADKRABANG, and NORTH BANGKOK. Shop your campus collection at KingGallery.Studio.",
+    "Premium streetwear shirts for BANGMOD, LADKRABANG, and NORTH BANGKOK. Shop your campus collection at SWAGCLUB.",
 };
 
 export default function RootLayout({

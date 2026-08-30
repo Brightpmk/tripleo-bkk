@@ -1,4 +1,4 @@
-import type { JerseySize, Product, UniversityId } from "./catalog";
+import type { ShirtSize, Product, UniversityId } from "./catalog";
 
 export type CartItem = {
   lineId: string;
@@ -6,7 +6,7 @@ export type CartItem = {
   universityId: UniversityId;
   productName: string;
   colorName: string;
-  size: JerseySize;
+  size: ShirtSize;
   quantity: number;
   unitPriceThb: number;
   image: string;
@@ -15,14 +15,14 @@ export type CartItem = {
 export type AddCartItemInput = {
   product: Product;
   universityId: UniversityId;
-  size: JerseySize;
+  size: ShirtSize;
   quantity: number;
 };
 
 export function buildLineId(input: {
   productId: string;
   universityId: UniversityId;
-  size: JerseySize;
+  size: ShirtSize;
 }) {
   return `${input.universityId}:${input.productId}:${input.size}`;
 }

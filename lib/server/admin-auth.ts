@@ -13,7 +13,7 @@ export type AdminSessionData = {
 
 export function getAdminSessionOptions(secret = getAdminSessionSecret()): SessionOptions {
   return {
-    cookieName: "kinggallery_admin_session",
+    cookieName: "swagclub_admin_session",
     password: secret,
     ttl: ADMIN_SESSION_TTL_SECONDS,
     cookieOptions: {

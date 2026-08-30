@@ -25,7 +25,7 @@ export const orderItemsHeaders = [
   "ORDER_ID",
   "ITEM_ID",
   "PRODUCT_ID",
-  "JERSEY_COLOR",
+  "SHIRT_COLOR",
   "SIZE",
   "QUANTITY",
   "UNIT_PRICE",

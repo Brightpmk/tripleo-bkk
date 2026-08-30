@@ -16,7 +16,7 @@ vi.mock("server-only", () => ({}));
 const validProduct: AdminProduct = {
   productId: "kg-bm-aurora",
   university: "BANGMOD",
-  jerseyColor: "Aurora Glow",
+  shirtColor: "Aurora Glow",
   priceThb: 450,
   imageUrl: "https://store.public.blob.vercel-storage.com/products/aurora.png",
   availableSizes: ["S", "M", "XL"],
@@ -25,12 +25,12 @@ const validProduct: AdminProduct = {
 };
 
 describe("admin product validation", () => {
-  it("accepts a valid product and arbitrary new JerseyColor", () => {
+  it("accepts a valid product and arbitrary new ShirtColor", () => {
     expect(
       validateAdminProductInput({
         ...validProduct,
-        jerseyColor: "Salted Caramel Cloud"
-      }).jerseyColor
+        shirtColor: "Salted Caramel Cloud"
+      }).shirtColor
     ).toBe("Salted Caramel Cloud");
   });
 
@@ -63,7 +63,7 @@ describe("admin product validation", () => {
       [
         "PRODUCT_ID",
         "UNIVERSITY",
-        "JERSEY_COLOR",
+        "SHIRT_COLOR",
         "PRICE",
         "IMAGE_URL",
         "AVAILABLE_SIZES",
@@ -148,7 +148,7 @@ describe("admin product operations", () => {
         active: false,
         priceThb: 525,
         availableSizes: ["XS", "2XL"],
-        jerseyColor: "Future Flavor"
+        shirtColor: "Future Flavor"
       },
       null,
       {
@@ -169,7 +169,7 @@ describe("admin product operations", () => {
       active: false,
       priceThb: 525,
       availableSizes: ["XS", "2XL"],
-      jerseyColor: "Future Flavor"
+      shirtColor: "Future Flavor"
     });
   });
 });

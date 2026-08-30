@@ -15,7 +15,7 @@ type FilterStatus = "ALL" | "ACTIVE" | "INACTIVE";
 const emptyProduct: AdminProduct = {
   productId: "",
   university: "BANGMOD",
-  jerseyColor: "",
+  shirtColor: "",
   priceThb: 390,
   imageUrl: "",
   availableSizes: ["M", "L", "XL"],
@@ -83,7 +83,7 @@ export function AdminProductsManager({
     <main className="admin-shell">
       <header className="admin-topbar">
         <div>
-          <p className="admin-eyebrow">KingGallery Studio</p>
+          <p className="admin-eyebrow">SWAGCLUB</p>
           <h1>Products</h1>
         </div>
         <button
@@ -169,7 +169,7 @@ export function AdminProductsManager({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={product.imageUrl} alt="" />
                       <div>
-                        <strong>{product.jerseyColor}</strong>
+                        <strong>{product.shirtColor}</strong>
                         <span>{product.productId}</span>
                       </div>
                     </div>
@@ -326,10 +326,10 @@ function ProductEditor({
             </select>
           </Field>
 
-          <Field label="Jersey color" error={errors.jerseyColor}>
+          <Field label="Shirt color" error={errors.shirtColor}>
             <input
-              value={draft.jerseyColor}
-              onChange={(event) => update("jerseyColor", event.target.value)}
+              value={draft.shirtColor}
+              onChange={(event) => update("shirtColor", event.target.value)}
               required
               placeholder="Mint Chocolate Chip"
             />

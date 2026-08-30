@@ -9,7 +9,7 @@ vi.mock("server-only", () => ({}));
 const header = [
   "PRODUCT_ID",
   "UNIVERSITY",
-  "JERSEY_COLOR",
+  "SHIRT_COLOR",
   "PRICE",
   "IMAGE_URL",
   "AVAILABLE_SIZES",
@@ -18,7 +18,7 @@ const header = [
 ];
 
 describe("Products Sheet normalization", () => {
-  it("parses a valid product with arbitrary data-driven JerseyColor", async () => {
+  it("parses a valid product with arbitrary data-driven ShirtColor", async () => {
     const { normalizeProductRows } = await import("@/lib/server/product-catalog");
     const products = normalizeProductRows([
       header,
@@ -39,7 +39,7 @@ describe("Products Sheet normalization", () => {
       id: "kg-bm-aurora",
       primaryUniversityId: "bangmod",
       colorName: "Aurora Glow",
-      name: "Aurora Glow Jersey",
+      name: "Aurora Glow Shirt",
       priceThb: 450,
       availableSizes: ["XS", "S", "M"],
       active: true,

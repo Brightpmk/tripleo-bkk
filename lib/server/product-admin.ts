@@ -49,7 +49,7 @@ export function validateAdminProductInput(raw: RawProductInput): AdminProductInp
   const fieldErrors: Record<string, string> = {};
   const productId = asTrimmedString(raw.productId);
   const university = asTrimmedString(raw.university).toUpperCase();
-  const jerseyColor = asTrimmedString(raw.jerseyColor);
+  const shirtColor = asTrimmedString(raw.shirtColor);
   const priceThb = parseFiniteNumber(raw.priceThb);
   const imageUrl = asTrimmedString(raw.imageUrl);
   const availableSizes = normalizeSubmittedSizes(raw.availableSizes);
@@ -65,8 +65,8 @@ export function validateAdminProductInput(raw: RawProductInput): AdminProductInp
     fieldErrors.university = "Select a supported university.";
   }
 
-  if (!jerseyColor || jerseyColor.length > 80) {
-    fieldErrors.jerseyColor = "Enter a jersey color up to 80 characters.";
+  if (!shirtColor || shirtColor.length > 80) {
+    fieldErrors.shirtColor = "Enter a shirt color up to 80 characters.";
   }
 
   if (
@@ -110,7 +110,7 @@ export function validateAdminProductInput(raw: RawProductInput): AdminProductInp
   return {
     productId,
     university: university as AdminUniversity,
-    jerseyColor,
+    shirtColor,
     priceThb: priceThb as number,
     imageUrl,
     availableSizes: availableSizes as string[],
@@ -134,7 +134,7 @@ export function normalizeAdminProductRows(rows: unknown[][]): AdminProduct[] {
       validateAdminProductInput({
         productId,
         university: row[headerMap.UNIVERSITY],
-        jerseyColor: row[headerMap.JERSEY_COLOR],
+        shirtColor: row[headerMap.SHIRT_COLOR],
         priceThb: row[headerMap.PRICE],
         imageUrl: normalizeAdminImageUrl(row[headerMap.IMAGE_URL]),
         availableSizes: cellString(row[headerMap.AVAILABLE_SIZES]).split(","),
@@ -148,7 +148,7 @@ export function normalizeAdminProductRows(rows: unknown[][]): AdminProduct[] {
     (a, b) =>
       a.sortOrder - b.sortOrder ||
       a.university.localeCompare(b.university) ||
-      a.jerseyColor.localeCompare(b.jerseyColor) ||
+      a.shirtColor.localeCompare(b.shirtColor) ||
       a.productId.localeCompare(b.productId)
   );
 }

@@ -8,7 +8,7 @@ describe("Google Sheets adapter", () => {
   const productHeader = [
     "PRODUCT_ID",
     "UNIVERSITY",
-    "JERSEY_COLOR",
+    "SHIRT_COLOR",
     "PRICE",
     "IMAGE_URL",
     "AVAILABLE_SIZES",
@@ -18,7 +18,7 @@ describe("Google Sheets adapter", () => {
   const product: AdminProduct = {
     productId: "kg-bm-matcha",
     university: "BANGMOD",
-    jerseyColor: "Matcha",
+    shirtColor: "Matcha",
     priceThb: 450,
     imageUrl: "https://store.public.blob.vercel-storage.com/matcha.png",
     availableSizes: ["S", "M"],

@@ -21,7 +21,7 @@ export const adminProductSizes = [
 export type AdminProduct = {
   productId: string;
   university: AdminUniversity;
-  jerseyColor: string;
+  shirtColor: string;
   priceThb: number;
   imageUrl: string;
   availableSizes: string[];

@@ -16,7 +16,7 @@ export type Product = {
   colorName: string;
   priceThb: number;
   image: string;
-  availableSizes: JerseySize[];
+  availableSizes: ShirtSize[];
   active: boolean;
   sortOrder: number;
   availability?: string;
@@ -48,7 +48,7 @@ export const universities: University[] = [
 
 export const commonSizeOrder = ["XS", "S", "M", "L", "XL", "2XL", "3XL"] as const;
 
-export type JerseySize = string;
+export type ShirtSize = string;
 
 export const productImagePlaceholder = "/products/product-placeholder.svg";
 

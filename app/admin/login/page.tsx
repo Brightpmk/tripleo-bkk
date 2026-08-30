@@ -14,8 +14,8 @@ export default async function AdminLoginPage() {
   return (
     <main className="admin-login-shell">
       <section className="admin-login-card" aria-labelledby="admin-login-title">
-        <div className="admin-brand-mark" aria-hidden="true">KG</div>
-        <p className="admin-eyebrow">KingGallery Studio</p>
+        <div className="admin-brand-mark" aria-hidden="true">SC</div>
+        <p className="admin-eyebrow">SWAGCLUB</p>
         <h1 id="admin-login-title">Staff sign in</h1>
         <p className="admin-login-copy">
           Enter the store password to manage the product catalog.
