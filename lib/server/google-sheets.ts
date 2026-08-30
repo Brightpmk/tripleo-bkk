@@ -13,11 +13,89 @@ import { getProductHeaderMap, productToSheetRow } from "./product-sheet";
 
 export type SheetsClient = sheets_v4.Sheets;
 
+export type OrderSheetIds = {
+  ordersSheetId: number;
+  orderItemsSheetId: number;
+};
+
+/**
+ * A JWT client caches its OAuth access token internally, so reusing one
+ * instance across warm invocations removes a token exchange round trip from
+ * every order. The client holds no per-request state.
+ */
+let cachedSheetsClient: SheetsClient | null = null;
+
+/**
+ * Tab IDs change only if a tab is deleted and recreated. Caching them removes
+ * a spreadsheets.get round trip from the order critical path; any write
+ * failure clears the cache so the next attempt re-resolves them.
+ */
+let cachedOrderSheetIds: OrderSheetIds | null = null;
+
+export function resetSheetsCachesForTests() {
+  cachedSheetsClient = null;
+  cachedOrderSheetIds = null;
+}
+
+/**
+ * Warms the Sheets auth token and tab IDs. Safe to start in parallel with
+ * other work: it is read-only and never rejects — a failure just leaves the
+ * cache cold so the real append resolves (and reports) it.
+ */
+export async function prefetchOrderSheetIds() {
+  if (cachedOrderSheetIds) {
+    return;
+  }
+
+  try {
+    const env = getGoogleSheetsEnv();
+    const sheets = getAuthenticatedSheetsClient(env);
+    cachedOrderSheetIds = await resolveOrderSheetIds(sheets, env);
+  } catch {
+    // Warm-up only. The append path surfaces the real error.
+  }
+}
+
 export async function appendOrderRows(rows: OrderSheetRows) {
   const env = getGoogleSheetsEnv();
   const sheets = getAuthenticatedSheetsClient(env);
+  const sheetIds =
+    cachedOrderSheetIds ?? (await resolveOrderSheetIds(sheets, env));
 
-  await appendRowsWithClient(sheets, env, rows);
+  cachedOrderSheetIds = sheetIds;
+
+  try {
+    await appendRowsWithClient(sheets, env, rows, sheetIds);
+  } catch (error) {
+    // A recreated tab would make the cached IDs wrong — never reuse them
+    // after a failed write.
+    cachedOrderSheetIds = null;
+    throw error;
+  }
+}
+
+export async function resolveOrderSheetIds(
+  sheets: SheetsClient,
+  env: Pick<
+    GoogleSheetsEnv,
+    "GOOGLE_ORDER_SPREADSHEET_ID" | "GOOGLE_ORDERS_RANGE" | "GOOGLE_ORDER_ITEMS_RANGE"
+  >
+): Promise<OrderSheetIds> {
+  const spreadsheet = await sheets.spreadsheets.get({
+    spreadsheetId: env.GOOGLE_ORDER_SPREADSHEET_ID,
+    fields: "sheets.properties(sheetId,title)"
+  });
+
+  return {
+    ordersSheetId: getSheetIdByTitle(
+      spreadsheet.data.sheets,
+      getSheetNameFromRange(env.GOOGLE_ORDERS_RANGE)
+    ),
+    orderItemsSheetId: getSheetIdByTitle(
+      spreadsheet.data.sheets,
+      getSheetNameFromRange(env.GOOGLE_ORDER_ITEMS_RANGE)
+    )
+  };
 }
 
 export async function readProductRows() {
@@ -193,22 +271,12 @@ export async function appendRowsWithClient(
     GoogleSheetsEnv,
     "GOOGLE_ORDER_SPREADSHEET_ID" | "GOOGLE_ORDERS_RANGE" | "GOOGLE_ORDER_ITEMS_RANGE"
   >,
-  rows: OrderSheetRows
+  rows: OrderSheetRows,
+  sheetIds?: OrderSheetIds
 ) {
   const spreadsheetId = env.GOOGLE_ORDER_SPREADSHEET_ID;
-  const spreadsheet = await sheets.spreadsheets.get({
-    spreadsheetId,
-    fields: "sheets.properties(sheetId,title)"
-  });
-
-  const ordersSheetId = getSheetIdByTitle(
-    spreadsheet.data.sheets,
-    getSheetNameFromRange(env.GOOGLE_ORDERS_RANGE)
-  );
-  const orderItemsSheetId = getSheetIdByTitle(
-    spreadsheet.data.sheets,
-    getSheetNameFromRange(env.GOOGLE_ORDER_ITEMS_RANGE)
-  );
+  const { ordersSheetId, orderItemsSheetId } =
+    sheetIds ?? (await resolveOrderSheetIds(sheets, env));
 
   await sheets.spreadsheets.batchUpdate({
     spreadsheetId,
@@ -234,13 +302,18 @@ export async function appendRowsWithClient(
 }
 
 function getAuthenticatedSheetsClient(env: GoogleSheetsEnv) {
+  if (cachedSheetsClient) {
+    return cachedSheetsClient;
+  }
+
   const auth = new google.auth.JWT({
     email: env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     key: normalizePrivateKey(env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY),
     scopes: ["https://www.googleapis.com/auth/spreadsheets"]
   });
 
-  return google.sheets({ version: "v4", auth });
+  cachedSheetsClient = google.sheets({ version: "v4", auth });
+  return cachedSheetsClient;
 }
 
 function getSheetNameFromRange(range: string) {

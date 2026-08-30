@@ -9,6 +9,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    globals: true
+    globals: true,
+    // Keep per-order timing lines out of test output; the timing test
+    // re-enables them explicitly.
+    env: { ORDER_TIMING_LOGS: "off" }
   }
 });

@@ -30,6 +30,7 @@ import {
   type DeliveryMethod
 } from "@/lib/pricing";
 import { acceptedSlipMimeTypes, validateSlipFile } from "@/lib/slip";
+import { formatBytes, optimizeSlipImage } from "@/lib/slip-image";
 import {
   getSizeSurchargeThb,
   getUnitPriceThbForSize,
@@ -50,6 +51,13 @@ type StorefrontAppProps = {
 };
 
 const MAX_LINE_QUANTITY = 20;
+
+type SubmitStage = "idle" | "uploading" | "confirming";
+
+const submitStageLabels: Record<Exclude<SubmitStage, "idle">, string> = {
+  uploading: "Sending your payment slip",
+  confirming: "Confirming your order"
+};
 
 const defaultCheckout: CheckoutDetails = {
   fullName: "",
@@ -103,6 +111,10 @@ export function StorefrontApp({
   const [slipPreviewUrl, setSlipPreviewUrl] = useState("");
   const slipPreviewUrlRef = useRef("");
   const [slipError, setSlipError] = useState("");
+  const [slipOptimizing, setSlipOptimizing] = useState(false);
+  const [slipSavedFromBytes, setSlipSavedFromBytes] = useState(0);
+  const [submitStage, setSubmitStage] = useState<SubmitStage>("idle");
+  const [uploadPercent, setUploadPercent] = useState(0);
   const [submissionError, setSubmissionError] = useState("");
   const [submissionKey, setSubmissionKey] = useState(createSubmissionKey);
   const [order, setOrder] = useState<ConfirmedOrder | null>(null);
@@ -227,15 +239,18 @@ export function StorefrontApp({
     focusFirstInvalidField();
   }
 
-  function selectSlip(file: File | null) {
+  async function selectSlip(file: File | null) {
     setSlipError("");
     setSubmissionError("");
     setSlip(null);
+    setSlipSavedFromBytes(0);
 
     if (!file) {
       return;
     }
 
+    // Limits are still enforced against the file the customer actually
+    // picked, before any optimisation — behaviour is unchanged.
     const validation = validateSlipFile(file);
 
     if (!validation.ok) {
@@ -243,7 +258,18 @@ export function StorefrontApp({
       return;
     }
 
-    setSlip(file);
+    // Shrinking here rather than at submit time means the work overlaps the
+    // review step, so Confirm has a small file ready to go. The server
+    // re-validates whatever actually arrives.
+    setSlipOptimizing(true);
+
+    try {
+      const optimized = await optimizeSlipImage(file);
+      setSlip(optimized.file);
+      setSlipSavedFromBytes(optimized.compressed ? optimized.originalBytes : 0);
+    } finally {
+      setSlipOptimizing(false);
+    }
   }
 
   async function confirmOrder() {
@@ -252,6 +278,8 @@ export function StorefrontApp({
     }
 
     setIsSubmitting(true);
+    setSubmitStage("uploading");
+    setUploadPercent(0);
     setSubmissionError("");
 
     try {
@@ -270,15 +298,20 @@ export function StorefrontApp({
       const formData = new FormData();
       formData.append("order", JSON.stringify(orderPayload));
       formData.append("slip", slipFile, slipFile.name);
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        body: formData
+
+      const result = await postOrder(formData, (percent) => {
+        setUploadPercent(percent);
+
+        // Bytes are all sent; the wait is now server-side.
+        if (percent >= 100) {
+          setSubmitStage("confirming");
+        }
       });
-      const result = (await response.json()) as OrderSubmissionResult;
 
       if (!result.ok) {
         setSubmissionError(result.message);
         setIsSubmitting(false);
+        setSubmitStage("idle");
         return;
       }
 
@@ -302,6 +335,7 @@ export function StorefrontApp({
       );
     } finally {
       setIsSubmitting(false);
+      setSubmitStage("idle");
     }
   }
 
@@ -312,6 +346,7 @@ export function StorefrontApp({
     setOrder(null);
     setFormErrors({});
     setSlipError("");
+    setSlipSavedFromBytes(0);
     setSubmissionError("");
     setSubmissionKey(createSubmissionKey());
     setStep(selectedUniversityId ? "shop" : "select");
@@ -414,6 +449,8 @@ export function StorefrontApp({
               slipFile={slipFile}
               slipPreviewUrl={slipPreviewUrl}
               slipError={slipError}
+              slipOptimizing={slipOptimizing}
+              slipSavedFromBytes={slipSavedFromBytes}
               onSlipChange={selectSlip}
               onBack={() => setStep("checkout")}
               onContinue={() => slipFile && setStep("review")}
@@ -428,6 +465,8 @@ export function StorefrontApp({
               submissionError={submissionError}
               slipFile={slipFile}
               slipPreviewUrl={slipPreviewUrl}
+              submitStage={submitStage}
+              uploadPercent={uploadPercent}
               totals={totals}
               university={selectedUniversity}
               onBack={() => setStep("payment")}
@@ -1112,6 +1151,8 @@ function PaymentSection({
   slipFile,
   slipPreviewUrl,
   slipError,
+  slipOptimizing,
+  slipSavedFromBytes,
   onSlipChange,
   onBack,
   onContinue
@@ -1120,6 +1161,8 @@ function PaymentSection({
   slipFile: File | null;
   slipPreviewUrl: string;
   slipError: string;
+  slipOptimizing: boolean;
+  slipSavedFromBytes: number;
   onSlipChange: (file: File | null) => void;
   onBack: () => void;
   onContinue: () => void;
@@ -1187,8 +1230,18 @@ function PaymentSection({
       <div className="upload-block">
         <h3 className="pay-steps-title">Payment slip</h3>
 
-        <label className={`upload${slipFile ? " has-file" : ""}`}>
-          {slipFile ? (
+        <label
+          className={`upload${slipFile ? " has-file" : ""}${
+            slipOptimizing ? " is-busy" : ""
+          }`}
+        >
+          {slipOptimizing ? (
+            <>
+              <span className="spinner" aria-hidden="true" />
+              <span className="upload-title">Preparing your slip…</span>
+              <span className="upload-hint">This keeps checkout fast.</span>
+            </>
+          ) : slipFile ? (
             <>
               <span className="upload-thumb">
                 {slipPreviewUrl ? (
@@ -1199,7 +1252,9 @@ function PaymentSection({
               <span className="upload-meta">
                 <span className="upload-filename">{slipFile.name}</span>
                 <span className="upload-sub">
-                  {formatFileSize(slipFile.size)} · Tap to choose another
+                  {slipSavedFromBytes > 0
+                    ? `${formatBytes(slipSavedFromBytes)} → ${formatBytes(slipFile.size)} · Tap to choose another`
+                    : `${formatBytes(slipFile.size)} · Tap to choose another`}
                 </span>
               </span>
             </>
@@ -1215,6 +1270,7 @@ function PaymentSection({
           <input
             accept={acceptedSlipMimeTypes.join(",")}
             type="file"
+            disabled={slipOptimizing}
             onChange={(event) => {
               onSlipChange(event.target.files?.item(0) ?? null);
               // Allow re-picking the same file after a validation error.
@@ -1258,7 +1314,7 @@ function PaymentSection({
             </button>
             <button
               className="btn btn-primary"
-              disabled={!slipFile}
+              disabled={!slipFile || slipOptimizing}
               type="button"
               onClick={onContinue}
             >
@@ -1281,6 +1337,8 @@ function ReviewSection({
   submissionError,
   slipFile,
   slipPreviewUrl,
+  submitStage,
+  uploadPercent,
   totals,
   university,
   onBack,
@@ -1292,6 +1350,8 @@ function ReviewSection({
   submissionError: string;
   slipFile: File | null;
   slipPreviewUrl: string;
+  submitStage: SubmitStage;
+  uploadPercent: number;
   totals: ReturnType<typeof calculateOrderTotals>;
   university: University;
   onBack: () => void;
@@ -1352,7 +1412,7 @@ function ReviewSection({
               {slipFile ? slipFile.name : "No slip attached"}
             </span>
             <span className="upload-sub">
-              {slipFile ? formatFileSize(slipFile.size) : "Go back to upload one"}
+              {slipFile ? formatBytes(slipFile.size) : "Go back to upload one"}
             </span>
           </span>
         </div>
@@ -1393,6 +1453,40 @@ function ReviewSection({
         </p>
       ) : null}
 
+      {submitStage !== "idle" ? (
+        <div className="submit-status" role="status" aria-live="polite">
+          <div className="submit-status-head">
+            <span className="submit-status-label">
+              {submitStageLabels[submitStage]}…
+            </span>
+            {submitStage === "uploading" ? (
+              <span className="submit-status-percent">{uploadPercent}%</span>
+            ) : null}
+          </div>
+          <div
+            className="submit-progress"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={submitStage === "uploading" ? uploadPercent : undefined}
+          >
+            <span
+              className={`submit-progress-fill${
+                submitStage === "confirming" ? " is-indeterminate" : ""
+              }`}
+              style={
+                submitStage === "uploading"
+                  ? { width: `${uploadPercent}%` }
+                  : undefined
+              }
+            />
+          </div>
+          <p className="submit-status-note">
+            Keep this page open — don&apos;t close or refresh.
+          </p>
+        </div>
+      ) : null}
+
       <div className="action-bar">
         <div className="action-bar-inner">
           <dl className="action-bar-total">
@@ -1411,13 +1505,14 @@ function ReviewSection({
             <button
               className="btn btn-primary"
               disabled={!slipFile || isSubmitting}
+              aria-busy={isSubmitting}
               type="button"
               onClick={onConfirm}
             >
               {isSubmitting ? (
                 <>
                   <span className="spinner" aria-hidden="true" />
-                  Placing order
+                  {submitStage === "confirming" ? "Confirming" : "Sending"}
                 </>
               ) : (
                 "Place order"
@@ -1690,16 +1785,42 @@ function clampQuantity(quantity: number, min: number) {
   return Math.min(MAX_LINE_QUANTITY, Math.max(min, Math.floor(quantity)));
 }
 
-function formatFileSize(bytes: number) {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
+/**
+ * Posts the order over XHR rather than fetch purely so the upload can report
+ * real byte progress — on mobile the slip upload is most of the wait, and a
+ * moving bar is the difference between "working" and "frozen". Same-origin
+ * POST still sends the Origin header the API requires.
+ */
+function postOrder(
+  formData: FormData,
+  onUploadProgress: (percent: number) => void
+): Promise<OrderSubmissionResult> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
 
-  if (bytes < 1024 * 1024) {
-    return `${Math.round(bytes / 1024)} KB`;
-  }
+    xhr.open("POST", "/api/orders");
 
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable && event.total > 0) {
+        onUploadProgress(
+          Math.min(100, Math.round((event.loaded / event.total) * 100))
+        );
+      }
+    };
+    xhr.upload.onload = () => onUploadProgress(100);
+
+    xhr.onload = () => {
+      try {
+        resolve(JSON.parse(xhr.responseText) as OrderSubmissionResult);
+      } catch {
+        reject(new Error("Order response could not be read."));
+      }
+    };
+    xhr.onerror = () => reject(new Error("Order submission failed."));
+    xhr.ontimeout = () => reject(new Error("Order submission timed out."));
+
+    xhr.send(formData);
+  });
 }
 
 function focusFirstInvalidField() {
