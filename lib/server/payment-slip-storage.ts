@@ -18,6 +18,11 @@ export type StoredPaymentSlip = {
   fileId: string;
 };
 
+export type StoredPaymentSlipContent = {
+  buffer: Buffer;
+  mimeType: string;
+};
+
 export type PaymentSlipStorage = {
   upload(input: PaymentSlipUploadInput): Promise<StoredPaymentSlip>;
   delete(fileId: string): Promise<void>;
@@ -67,6 +72,29 @@ export class GoogleDriveSlipStorage implements PaymentSlipStorage {
 
   async delete(fileId: string) {
     await this.drive.files.delete({ fileId });
+  }
+
+  /**
+   * Fetches slip bytes through the server's own Drive credentials.
+   *
+   * Intentionally not part of PaymentSlipStorage: only the authenticated
+   * admin slip route uses it. The Drive file stays private — nothing is ever
+   * made link-shareable, and no credential reaches the browser.
+   */
+  async read(fileId: string): Promise<StoredPaymentSlipContent> {
+    const metadata = await this.drive.files.get({
+      fileId,
+      fields: "mimeType,size"
+    });
+    const content = await this.drive.files.get(
+      { fileId, alt: "media" },
+      { responseType: "arraybuffer" }
+    );
+
+    return {
+      buffer: Buffer.from(content.data as ArrayBuffer),
+      mimeType: metadata.data.mimeType ?? "application/octet-stream"
+    };
   }
 }
 

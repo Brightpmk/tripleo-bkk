@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { AdminShell } from "../AdminShell";
 import {
   adminProductSizes,
   adminUniversities,
@@ -33,7 +33,6 @@ export function AdminProductsManager({
   initialProducts: AdminProduct[];
   loadError: string;
 }) {
-  const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
   const [search, setSearch] = useState("");
   const [universityFilter, setUniversityFilter] =
@@ -42,7 +41,6 @@ export function AdminProductsManager({
   const [editing, setEditing] = useState<AdminProduct | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [notice, setNotice] = useState<AdminNotice | null>(null);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   const filteredProducts = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -98,33 +96,8 @@ export function AdminProductsManager({
     closeEditor();
   }
 
-  async function logout() {
-    setLoggingOut(true);
-    try {
-      await fetch("/api/admin/logout", { method: "POST" });
-    } finally {
-      router.replace("/admin/login");
-      router.refresh();
-    }
-  }
-
   return (
-    <main className="admin-shell">
-      <header className="admin-topbar">
-        <div className="admin-topbar-text">
-          <p className="admin-eyebrow">Tripleo.bkk</p>
-          <h1>Products</h1>
-        </div>
-        <button
-          className="admin-button admin-button-secondary"
-          type="button"
-          onClick={logout}
-          disabled={loggingOut}
-        >
-          {loggingOut ? "Signing out…" : "Sign out"}
-        </button>
-      </header>
-
+    <AdminShell title="Products">
       <section className="admin-content">
         <div className="admin-section-head">
           <div>
@@ -296,7 +269,7 @@ export function AdminProductsManager({
           onDeleted={handleDeleted}
         />
       ) : null}
-    </main>
+    </AdminShell>
   );
 }
 
