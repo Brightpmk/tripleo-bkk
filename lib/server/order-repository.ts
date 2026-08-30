@@ -136,7 +136,15 @@ function cell(row: unknown[], index: number | undefined) {
 }
 
 function numberCell(row: unknown[], index: number | undefined) {
-  const raw = cell(row, index).replace(/,/g, "");
+  if (index === undefined) {
+    return 0;
+  }
+
+  const raw = cell(row, index).replace(/[^0-9.-]+/g, "");
+  if (!raw) {
+    return 0;
+  }
+
   const value = Number(raw);
 
   return Number.isFinite(value) ? value : 0;
