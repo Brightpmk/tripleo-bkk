@@ -2,7 +2,16 @@ import type { CartItem } from "./cart";
 import type { UniversityId } from "./catalog";
 import type { DeliveryMethod } from "./pricing";
 
-export type PaymentStatus = "pending" | "verified" | "rejected";
+/**
+ * Canonical payment states. Stored UPPERCASE in Orders.PAYMENT_STATUS.
+ * "verified" is what the admin surfaces as "Paid" — the stored value is kept
+ * as-is so historical rows and any downstream reader stay valid.
+ */
+export type PaymentStatus =
+  | "pending"
+  | "verified"
+  | "review_required"
+  | "rejected";
 
 export type CheckoutDetails = {
   fullName: string;

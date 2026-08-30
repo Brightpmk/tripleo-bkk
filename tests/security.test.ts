@@ -46,7 +46,10 @@ describe("server credential boundaries", () => {
   it("keeps all admin, Blob, Sheets, and Drive secrets out of client modules", () => {
     const clientSources = [
       "components/StorefrontApp.tsx",
-      "app/admin/AdminProductsManager.tsx",
+      "app/admin/AdminShell.tsx",
+      "app/admin/products/AdminProductsManager.tsx",
+      "app/admin/orders/AdminOrdersView.tsx",
+      "app/admin/orders/[orderId]/AdminOrderDetailView.tsx",
       "app/admin/login/AdminLoginForm.tsx"
     ]
       .map((file) => readFileSync(file, "utf8"))
