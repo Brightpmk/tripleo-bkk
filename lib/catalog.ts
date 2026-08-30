@@ -150,3 +150,20 @@ export function getProductsForUniversity(
     product.active && product.sellableUniversityIds.includes(universityId)
   );
 }
+
+export function getAvailableDeliveryMethods(
+  universityId: UniversityId | string | null | undefined
+): Array<"pickup" | "shipping"> {
+  if (universityId === "bangmod") {
+    return ["pickup", "shipping"];
+  }
+  return ["shipping"];
+}
+
+export function isDeliveryMethodAllowed(
+  universityId: UniversityId | string | null | undefined,
+  deliveryMethod: "pickup" | "shipping"
+): boolean {
+  return getAvailableDeliveryMethods(universityId).includes(deliveryMethod);
+}
+
