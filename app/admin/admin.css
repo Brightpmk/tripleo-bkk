@@ -12,6 +12,7 @@
 .admin-login-shell,
 .admin-shell {
   min-height: 100vh;
+  overflow-x: clip;
   color: var(--admin-ink);
   background: var(--admin-ground);
   font-family: var(--font-body), Arial, sans-serif;
@@ -83,6 +84,7 @@
   color: var(--admin-ink);
   background: white;
   font: inherit;
+  font-size: 1rem;
   outline: none;
 }
 
@@ -172,7 +174,7 @@
 }
 
 .admin-button {
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 17px;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -224,14 +226,14 @@
 .admin-filters select,
 .admin-field input,
 .admin-field select {
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 11px;
   border: 1px solid #cdd7d0;
   border-radius: 8px;
   color: var(--admin-ink);
   background: white;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
@@ -430,7 +432,7 @@
 .admin-size-options span {
   display: grid;
   min-width: 46px;
-  min-height: 38px;
+  min-height: 44px;
   place-items: center;
   border: 1px solid #cdd7d0;
   border-radius: 8px;
@@ -480,6 +482,7 @@
   justify-content: flex-end;
   gap: 10px;
   padding-top: 6px;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .admin-sr-only {
@@ -503,6 +506,7 @@
 @media (max-width: 520px) {
   .admin-topbar {
     padding: 18px 20px;
+    gap: 16px;
   }
 
   .admin-content {
@@ -525,10 +529,18 @@
   }
 
   .admin-editor {
-    padding: 24px 20px;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
   }
 
   .admin-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .admin-form-actions .admin-button {
+    width: 100%;
   }
 }

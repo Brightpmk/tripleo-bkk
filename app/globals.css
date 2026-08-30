@@ -80,6 +80,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: clip;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-body);
@@ -460,7 +461,7 @@ fieldset {
   width: min(1120px, 100%);
   margin: 0 auto;
   padding: 0 clamp(var(--space-md), 4vw, var(--space-2xl));
-  padding-bottom: var(--space-4xl);
+  padding-bottom: calc(var(--space-4xl) + env(safe-area-inset-bottom));
 }
 
 /* ── Section Headers ────────────────────────────────────────────── */
@@ -585,8 +586,8 @@ fieldset {
 }
 
 .size-pill {
-  min-width: 42px;
-  height: 36px;
+  min-width: 44px;
+  height: 44px;
   padding: 0 var(--space-sm);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -621,6 +622,7 @@ fieldset {
 .qty-stepper {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -628,8 +630,9 @@ fieldset {
 }
 
 .qty-stepper-btn {
-  width: 36px;
-  height: 36px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
   border: none;
   background: var(--bg-elevated);
   font-size: 1.1rem;
@@ -646,8 +649,9 @@ fieldset {
 }
 
 .qty-stepper-value {
-  width: 44px;
-  height: 36px;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 44px;
   border: none;
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
@@ -721,7 +725,7 @@ fieldset {
   border: 1px solid transparent;
   background: transparent;
   color: var(--ink-secondary);
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 var(--space-md);
 }
 
@@ -801,12 +805,14 @@ fieldset {
   font-weight: 600;
   line-height: 1.3;
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }
 
 .cart-item-meta {
   font-size: 0.82rem;
   color: var(--ink-secondary);
   margin-bottom: 2px;
+  overflow-wrap: anywhere;
 }
 
 .cart-item-unit-price {
@@ -935,7 +941,7 @@ fieldset {
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: var(--ink);
   transition: all var(--duration-fast) var(--ease-out);
 }
@@ -1290,6 +1296,7 @@ fieldset {
   font-weight: 600;
   color: var(--success);
   margin-bottom: 4px;
+  overflow-wrap: anywhere;
 }
 
 .file-upload-change {
@@ -1351,11 +1358,13 @@ fieldset {
   font-size: 0.92rem;
   font-weight: 600;
   margin-bottom: 2px;
+  overflow-wrap: anywhere;
 }
 
 .review-item-details {
   font-size: 0.82rem;
   color: var(--ink-secondary);
+  overflow-wrap: anywhere;
 }
 
 .review-item-total {
@@ -1383,15 +1392,18 @@ fieldset {
 }
 
 .review-detail-label {
+  flex: 0 0 auto;
   font-size: 0.85rem;
   color: var(--ink-tertiary);
 }
 
 .review-detail-value {
+  min-width: 0;
   font-size: 0.85rem;
   font-weight: 600;
   text-align: right;
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 
 /* Review totals */
@@ -1481,6 +1493,7 @@ fieldset {
 
 .order-id-display {
   display: inline-block;
+  max-width: 100%;
   padding: var(--space-md) var(--space-xl);
   border: 2px solid var(--accent);
   border-radius: var(--radius-lg);
@@ -1492,6 +1505,7 @@ fieldset {
   letter-spacing: 0.04em;
   margin-bottom: var(--space-xl);
   user-select: all;
+  overflow-wrap: anywhere;
 }
 
 .success-summary {
@@ -1545,6 +1559,43 @@ fieldset {
 
 /* Mobile */
 @media (max-width: 720px) {
+  .site-header {
+    min-height: 64px;
+    height: auto;
+    padding: 8px 12px;
+    gap: var(--space-sm);
+  }
+
+  .site-header-inner {
+    min-width: 0;
+    gap: var(--space-sm);
+  }
+
+  .brand-wordmark {
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .university-badge {
+    display: none;
+  }
+
+  .cart-button {
+    flex-shrink: 0;
+    height: 44px;
+    padding: 0 12px;
+  }
+
+  .step-nav {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    padding-bottom: var(--space-xl);
+  }
+
+  .step-btn {
+    height: 44px;
+  }
+
   .landing {
     min-height: auto;
     padding: var(--space-2xl) var(--space-md);
@@ -1575,6 +1626,7 @@ fieldset {
   .cart-item {
     grid-template-columns: 72px 1fr;
     gap: var(--space-md);
+    padding: var(--space-md);
   }
 
   .cart-item-actions {
@@ -1585,7 +1637,12 @@ fieldset {
   }
 
   .review-item {
-    grid-template-columns: 48px 1fr auto;
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .review-item-total {
+    grid-column: 2;
+    justify-self: start;
   }
 
   .review-item-image {
@@ -1623,9 +1680,9 @@ fieldset {
   }
 
   .size-pill {
-    min-width: 38px;
-    height: 34px;
-    font-size: 0.78rem;
+    min-width: 44px;
+    height: 44px;
+    font-size: 0.8rem;
   }
 }
 
