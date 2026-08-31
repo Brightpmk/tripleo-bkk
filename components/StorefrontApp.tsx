@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getAvailableDeliveryMethods,
@@ -508,6 +509,9 @@ export function StorefrontApp({
         <span className="site-footer-note">
           Premium university streetwear · Bangkok
         </span>
+        <Link className="site-footer-link" href="/tracking">
+          Track order
+        </Link>
       </footer>
     </main>
   );
@@ -1658,11 +1662,19 @@ function SuccessSection({
           </div>
         </div>
 
-        <button
+        <Link
           className="btn btn-primary btn-block"
+          href="/tracking"
+          style={{ marginTop: "var(--s-4)" }}
+        >
+          Track this order
+        </Link>
+
+        <button
+          className="btn btn-secondary btn-block"
           type="button"
           onClick={onReset}
-          style={{ marginTop: "var(--s-4)" }}
+          style={{ marginTop: "var(--s-3)" }}
         >
           Start another order
         </button>
