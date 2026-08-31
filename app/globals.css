@@ -322,6 +322,42 @@ legend {
   opacity: 0.5;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex: 0 0 auto;
+}
+
+.track-nav-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-1);
+  flex: 0 0 auto;
+  height: var(--tap);
+  padding: 0 var(--s-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: border-color var(--t-1) var(--ease),
+    background var(--t-1) var(--ease), color var(--t-1) var(--ease);
+}
+
+.track-nav-btn:hover,
+.track-nav-btn:active {
+  border-color: var(--line-bright);
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
 .cart-btn {
   position: relative;
   display: inline-flex;

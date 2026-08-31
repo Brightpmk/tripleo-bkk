@@ -21,7 +21,7 @@ const emptyProduct: AdminProduct = {
   shirtColor: "",
   priceThb: 390,
   imageUrl: "",
-  availableSizes: ["M", "L", "XL"],
+  availableSizes: [...adminProductSizes],
   active: true,
   sortOrder: 0
 };
