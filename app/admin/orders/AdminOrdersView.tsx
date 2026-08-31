@@ -75,8 +75,7 @@ export function AdminOrdersView({
         <div>
           <h2>All orders</h2>
           <p>
-            {orders.length} order{orders.length === 1 ? "" : "s"} in Google
-            Sheets
+            {orders.length} order{orders.length === 1 ? "" : "s"} in Supabase
           </p>
         </div>
       </div>

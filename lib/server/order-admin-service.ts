@@ -15,14 +15,9 @@ import {
   type AdminOrderSummary
 } from "@/lib/orders-admin";
 import type { PaymentStatus } from "@/lib/orders";
-import {
-  GoogleSheetsOrderRepository,
-  toOrderSummary,
-  type AdminOrderRepository
-} from "./order-repository";
-import { OrderSheetError } from "./google-sheets";
-
-export { OrderSheetError } from "./google-sheets";
+import { OrderAdminError } from "./order-admin-error";
+import { toOrderSummary, type AdminOrderRepository } from "./order-repository";
+import { SupabaseOrderRepository } from "./supabase/order-repository";
 
 /**
  * Admin-only cache. Deliberately separate from the storefront catalog cache
@@ -31,7 +26,7 @@ export { OrderSheetError } from "./google-sheets";
 export const ADMIN_ORDERS_CACHE_TAG = "admin-orders";
 const ADMIN_ORDERS_CACHE_SECONDS = 15;
 
-const defaultRepository = new GoogleSheetsOrderRepository();
+const defaultRepository = new SupabaseOrderRepository();
 
 const loadCachedOrders = unstable_cache(
   async () => defaultRepository.listOrders(),
@@ -43,7 +38,7 @@ export function invalidateAdminOrdersCache() {
   revalidateTag(ADMIN_ORDERS_CACHE_TAG, { expire: 0 });
 }
 
-/** One Sheets round trip per snapshot, shared by every admin order screen. */
+/** One Supabase snapshot shared by every admin order screen. */
 export async function getAdminOrders(
   repository?: AdminOrderRepository
 ): Promise<AdminOrderDetail[]> {
@@ -115,7 +110,7 @@ export function isValidOrderId(value: unknown) {
  */
 export function parseAdminOrderPatch(raw: unknown): AdminOrderPatch {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
-    throw new OrderSheetError("Order update could not be read.", 400);
+    throw new OrderAdminError("Order update could not be read.", 400);
   }
 
   const input = raw as Record<string, unknown>;
@@ -125,7 +120,7 @@ export function parseAdminOrderPatch(raw: unknown): AdminOrderPatch {
     const value = asTrimmed(input.paymentStatus);
 
     if (!paymentStatuses.includes(value as PaymentStatus)) {
-      throw new OrderSheetError("Select a supported payment status.", 400);
+      throw new OrderAdminError("Select a supported payment status.", 400);
     }
 
     patch.paymentStatus = value as PaymentStatus;
@@ -135,7 +130,7 @@ export function parseAdminOrderPatch(raw: unknown): AdminOrderPatch {
     const value = asTrimmed(input.orderStatus);
 
     if (!orderStatuses.includes(value as AdminOrderStatus)) {
-      throw new OrderSheetError("Select a supported order status.", 400);
+      throw new OrderAdminError("Select a supported order status.", 400);
     }
 
     patch.orderStatus = value as AdminOrderStatus;
@@ -145,7 +140,7 @@ export function parseAdminOrderPatch(raw: unknown): AdminOrderPatch {
     const value = asTrimmed(input.shippingProvider);
 
     if (value.length > MAX_SHIPPING_PROVIDER_LENGTH) {
-      throw new OrderSheetError(
+      throw new OrderAdminError(
         `Shipping provider must be ${MAX_SHIPPING_PROVIDER_LENGTH} characters or fewer.`,
         400
       );
@@ -158,7 +153,7 @@ export function parseAdminOrderPatch(raw: unknown): AdminOrderPatch {
     const value = asTrimmed(input.trackingNumber);
 
     if (value.length > MAX_TRACKING_NUMBER_LENGTH) {
-      throw new OrderSheetError(
+      throw new OrderAdminError(
         `Tracking number must be ${MAX_TRACKING_NUMBER_LENGTH} characters or fewer.`,
         400
       );
@@ -168,7 +163,7 @@ export function parseAdminOrderPatch(raw: unknown): AdminOrderPatch {
   }
 
   if (Object.keys(patch).length === 0) {
-    throw new OrderSheetError("No supported order changes were provided.", 400);
+    throw new OrderAdminError("No supported order changes were provided.", 400);
   }
 
   return patch;
@@ -180,7 +175,7 @@ export async function updateAdminOrder(
   repository: AdminOrderRepository = defaultRepository
 ): Promise<AdminOrderDetail> {
   if (!isValidOrderId(orderId)) {
-    throw new OrderSheetError("Order was not found.", 404);
+    throw new OrderAdminError("Order was not found.", 404);
   }
 
   const patch = parseAdminOrderPatch(raw);
@@ -188,12 +183,12 @@ export async function updateAdminOrder(
   const matches = orders.filter((order) => order.orderId === orderId);
 
   if (matches.length === 0) {
-    throw new OrderSheetError("Order was not found.", 404);
+    throw new OrderAdminError("Order was not found.", 404);
   }
 
   if (matches.length > 1) {
-    throw new OrderSheetError(
-      "This order ID appears more than once in the sheet, so it was not updated.",
+    throw new OrderAdminError(
+      "This order ID appears more than once, so it was not updated.",
       409
     );
   }

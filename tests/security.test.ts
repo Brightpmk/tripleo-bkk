@@ -21,6 +21,8 @@ describe("server credential boundaries", () => {
     expect(envExample).toContain("ADMIN_PASSWORD_HASH");
     expect(envExample).toContain("ADMIN_SESSION_SECRET");
     expect(envExample).toContain("BLOB_STORE_ID");
+    expect(envExample).toContain("SUPABASE_URL");
+    expect(envExample).toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(envExample).not.toContain("BLOB_READ_WRITE_TOKEN");
     expect(envExample).not.toContain("ADMIN_PASSWORD=");
   });
@@ -59,6 +61,7 @@ describe("server credential boundaries", () => {
       "ADMIN_SESSION_SECRET",
       "BLOB_STORE_ID",
       "VERCEL_OIDC_TOKEN",
+      "SUPABASE_SERVICE_ROLE_KEY",
       "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",
       "GOOGLE_DRIVE_CLIENT_SECRET",
       "GOOGLE_DRIVE_REFRESH_TOKEN"

@@ -358,7 +358,7 @@ describe("public tracking privacy", () => {
     }
   });
 
-  it("leaks no address, phone, slip, or sheet metadata in the payload", async () => {
+  it("leaks no address, phone, slip, or database metadata in the payload", async () => {
     const result = await search("phone", "0812345678", [order()]);
     const payload = JSON.stringify(result);
 
@@ -406,7 +406,7 @@ describe("tracking failure handling", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const repository: AdminOrderRepository = {
       listOrders: vi.fn(async () => {
-        throw new Error("Google Sheets 503: spreadsheet 1AbC not reachable");
+        throw new Error("Supabase 503: table orders not reachable");
       }),
       updateOrder: vi.fn(),
       getSlipFileId: vi.fn()
@@ -416,10 +416,10 @@ describe("tracking failure handling", () => {
       searchTrackedOrders({ mode: "phone", value: "0812345678" }, repository)
     ).rejects.toBeInstanceOf(TrackingUnavailableError);
 
-    // The log must not carry the query value or Google internals.
+    // The log must not carry the query value or storage internals.
     const logged = JSON.stringify(error.mock.calls);
     expect(logged).not.toContain("0812345678");
-    expect(logged).not.toContain("spreadsheet");
+    expect(logged).not.toContain("table orders");
     expect(logged).toContain("errorName");
     error.mockRestore();
   });

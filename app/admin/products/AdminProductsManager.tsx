@@ -102,7 +102,7 @@ export function AdminProductsManager({
         <div className="admin-section-head">
           <div>
             <h2>Product catalog</h2>
-            <p>{products.length} products in Google Sheets</p>
+            <p>{products.length} products in Supabase</p>
           </div>
           <button
             className="admin-button admin-button-primary"
@@ -560,7 +560,7 @@ function ProductEditor({
               <span>
                 <strong>Active on storefront</strong>
                 <small>
-                  Inactive products stay in the sheet but cannot be purchased.
+                  Inactive products stay saved but cannot be purchased.
                 </small>
               </span>
             </label>

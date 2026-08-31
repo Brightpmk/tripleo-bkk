@@ -6,7 +6,7 @@ import type { DeliveryMethod } from "./pricing";
  * Shared admin order vocabulary.
  *
  * Every status string the admin renders or writes comes from here so the UI,
- * the API validation, and the Sheets repository can never drift apart.
+ * the API validation, and storage repositories can never drift apart.
  *
  * Sheet values are stored UPPERCASE (that is what the order writer has always
  * emitted). These constants are the lowercase canonical form; `toSheet*`
@@ -90,7 +90,7 @@ export type AdminOrderSummary = {
   orderId: string;
   createdAtIso: string;
   universityId: UniversityId | null;
-  /** Raw sheet value, kept so unmapped universities still render. */
+  /** Raw database value, kept so unmapped universities still render. */
   universityLabel: string;
   customerName: string;
   phone: string;
@@ -122,7 +122,7 @@ export type AdminOrderPatch = {
   trackingNumber?: string;
 };
 
-/* ── Parsing from sheet values ──────────────────────────────────── */
+/* ── Parsing from stored values ─────────────────────────────────── */
 
 function normalizeToken(value: unknown) {
   return String(value ?? "")
@@ -180,11 +180,6 @@ export function parseDeliveryMethod(value: unknown): DeliveryMethod | null {
     default:
       return null;
   }
-}
-
-/** Sheet form. Kept uppercase to match every row already written. */
-export function toSheetStatus(value: string) {
-  return value.toUpperCase();
 }
 
 export function getUniversityBySheetValue(value: string) {

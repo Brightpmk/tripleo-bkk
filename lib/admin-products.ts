@@ -5,8 +5,8 @@ import {
 } from "./catalog";
 
 /**
- * Admin writes the canonical Google Sheets UNIVERSITY value straight into
- * Products.UNIVERSITY, so this list is the catalog's sheet values verbatim.
+ * Admin writes the canonical UNIVERSITY value into Products.UNIVERSITY, so this
+ * list preserves the imported Google Sheets values verbatim.
  */
 export const adminUniversities = universitySheetValues;
 

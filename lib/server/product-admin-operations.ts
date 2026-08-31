@@ -150,7 +150,7 @@ export async function deleteAdminProductWithImageCleanup(
   // 1. Preserve the image URL while the row still exists.
   const imageUrl = existing.imageUrl;
 
-  // 2. Sheet first. A throw here propagates and skips cleanup entirely.
+  // 2. Database first. A throw here propagates and skips cleanup entirely.
   await dependencies.deleteProduct(productId);
 
   // 3. Committed. Cleanup is advisory from here on.

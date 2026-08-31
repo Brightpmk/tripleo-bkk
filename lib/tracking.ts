@@ -5,9 +5,7 @@ import type { AdminOrderStatus } from "./orders-admin";
 /**
  * Public order tracking — shared vocabulary.
  *
- * The customer-facing surface of the same statuses the admin writes. Nothing
- * here is a second copy of the status values: they are re-exported from
- * lib/orders-admin so Google Sheets stays the single source of truth.
+ * The customer-facing surface of the same statuses the admin writes.
  */
 
 /* ── Query limits ───────────────────────────────────────────────── */

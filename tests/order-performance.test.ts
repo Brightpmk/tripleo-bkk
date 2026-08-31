@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OrderSubmissionRequest } from "@/lib/order-submission";
-import type { OrderSheetRows } from "@/lib/server/order-row-mapper";
 import { submitOrderWithSlip } from "@/lib/server/order-service";
-import {
-  appendRowsWithClient,
-  resolveOrderSheetIds
-} from "@/lib/server/google-sheets";
 import { optimizeSlipImage } from "@/lib/slip-image";
 import { testProducts } from "./fixtures/products";
 
@@ -40,22 +35,13 @@ afterEach(() => {
 });
 
 describe("order submission concurrency", () => {
-  it("starts the catalog read, slip decode, and Sheets warm-up together", async () => {
+  it("starts catalog loading before any write side effects", async () => {
     const started: string[] = [];
-    let catalogResolved = false;
 
     const getProductCatalog = vi.fn(async () => {
       started.push("catalog");
       await wait(30);
-      catalogResolved = true;
       return testProducts;
-    });
-
-    const prefetchSheets = vi.fn(async () => {
-      started.push("warmup");
-      // The warm-up must already be running while the catalog is in flight.
-      expect(catalogResolved).toBe(false);
-      await wait(10);
     });
 
     const result = await submitOrderWithSlip(
@@ -63,17 +49,27 @@ describe("order submission concurrency", () => {
       jpegSlip(),
       {
         getProductCatalog,
-        prefetchSheets,
-        appendRows: vi.fn(async () => undefined),
+        persistOrder: vi.fn(async () => {
+          started.push("order-write");
+        }),
         slipStorage: {
-          upload: vi.fn(async () => ({ fileId: "drive-1" })),
+          upload: vi.fn(async () => {
+            started.push("slip-upload");
+            return { fileId: "drive-1" };
+          }),
           delete: vi.fn()
         }
       }
     );
 
     expect(result.ok).toBe(true);
-    expect(started).toEqual(["catalog", "warmup"]);
+    expect(started[0]).toBe("catalog");
+    expect(started.indexOf("catalog")).toBeLessThan(
+      started.indexOf("slip-upload")
+    );
+    expect(started.indexOf("catalog")).toBeLessThan(
+      started.indexOf("order-write")
+    );
   });
 
   it("keeps the two write side effects strictly ordered after validation", async () => {
@@ -87,9 +83,6 @@ describe("order submission concurrency", () => {
           order.push("catalog");
           return testProducts;
         },
-        prefetchSheets: async () => {
-          order.push("warmup");
-        },
         slipStorage: {
           upload: vi.fn(async () => {
             order.push("slip-upload");
@@ -97,8 +90,8 @@ describe("order submission concurrency", () => {
           }),
           delete: vi.fn()
         },
-        appendRows: vi.fn(async () => {
-          order.push("sheets-write");
+        persistOrder: vi.fn(async () => {
+          order.push("order-write");
         })
       }
     );
@@ -107,32 +100,31 @@ describe("order submission concurrency", () => {
     // Reads may interleave, but the slip must land before the row that
     // references it, and nothing may write before validation passes.
     expect(order.indexOf("slip-upload")).toBeLessThan(
-      order.indexOf("sheets-write")
+      order.indexOf("order-write")
     );
     expect(order.indexOf("catalog")).toBeLessThan(order.indexOf("slip-upload"));
   });
 
   it("performs no writes when validation fails", async () => {
     const upload = vi.fn();
-    const appendRows = vi.fn();
+    const persistOrder = vi.fn();
 
     const result = await submitOrderWithSlip(
       { ...buildRequest("invalid-1"), items: [] },
       jpegSlip(),
       {
         getProductCatalog: async () => testProducts,
-        prefetchSheets: async () => undefined,
-        appendRows,
+        persistOrder,
         slipStorage: { upload, delete: vi.fn() }
       }
     );
 
     expect(result.ok).toBe(false);
     expect(upload).not.toHaveBeenCalled();
-    expect(appendRows).not.toHaveBeenCalled();
+    expect(persistOrder).not.toHaveBeenCalled();
   });
 
-  it("never reports success when the Sheets write fails", async () => {
+  it("never reports success when the Supabase transaction fails", async () => {
     const deleteSlip = vi.fn(async () => undefined);
 
     const result = await submitOrderWithSlip(
@@ -140,13 +132,12 @@ describe("order submission concurrency", () => {
       jpegSlip(),
       {
         getProductCatalog: async () => testProducts,
-        prefetchSheets: async () => undefined,
         slipStorage: {
           upload: vi.fn(async () => ({ fileId: "drive-1" })),
           delete: deleteSlip
         },
-        appendRows: vi.fn(async () => {
-          throw new Error("Sheets 503");
+        persistOrder: vi.fn(async () => {
+          throw new Error("Supabase 503");
         })
       }
     );
@@ -155,26 +146,6 @@ describe("order submission concurrency", () => {
     expect(result.ok).toBe(false);
     // Existing partial-failure protection must survive the refactor.
     expect(deleteSlip).toHaveBeenCalledWith("drive-1");
-  });
-
-  it("survives a Sheets warm-up failure without failing the order", async () => {
-    const result = await submitOrderWithSlip(
-      buildRequest("warmup-fail-1"),
-      jpegSlip(),
-      {
-        getProductCatalog: async () => testProducts,
-        // prefetchOrderSheetIds swallows its own errors; this proves the
-        // service does not depend on it succeeding.
-        prefetchSheets: async () => undefined,
-        appendRows: vi.fn(async () => undefined),
-        slipStorage: {
-          upload: vi.fn(async () => ({ fileId: "drive-1" })),
-          delete: vi.fn()
-        }
-      }
-    );
-
-    expect(result.ok).toBe(true);
   });
 });
 
@@ -190,8 +161,7 @@ describe("order timing diagnostics", () => {
         jpegSlip(),
         {
           getProductCatalog: async () => testProducts,
-          prefetchSheets: async () => undefined,
-          appendRows: vi.fn(async () => undefined),
+          persistOrder: vi.fn(async () => undefined),
           slipStorage: {
             upload: vi.fn(async () => ({ fileId: "drive-secret-file-id" })),
             delete: vi.fn()
@@ -207,7 +177,7 @@ describe("order timing diagnostics", () => {
           totalMs: expect.any(Number),
           catalogMs: expect.any(Number),
           slipUploadMs: expect.any(Number),
-          sheetsWriteMs: expect.any(Number)
+          orderWriteMs: expect.any(Number)
         })
       );
 
@@ -230,8 +200,7 @@ describe("order timing diagnostics", () => {
 
     await submitOrderWithSlip(buildRequest("timing-off-1"), jpegSlip(), {
       getProductCatalog: async () => testProducts,
-      prefetchSheets: async () => undefined,
-      appendRows: vi.fn(async () => undefined),
+      persistOrder: vi.fn(async () => undefined),
       slipStorage: {
         upload: vi.fn(async () => ({ fileId: "drive-1" })),
         delete: vi.fn()
@@ -239,67 +208,6 @@ describe("order timing diagnostics", () => {
     });
 
     expect(info).not.toHaveBeenCalled();
-  });
-});
-
-describe("Sheets round-trip elimination", () => {
-  const env = {
-    GOOGLE_ORDER_SPREADSHEET_ID: "spreadsheet-id",
-    GOOGLE_ORDERS_RANGE: "Orders!A:Q",
-    GOOGLE_ORDER_ITEMS_RANGE: "OrderItems!A:H"
-  };
-  const rows: OrderSheetRows = {
-    ordersRow: ["KG-2026-A8F2B91C"],
-    orderItemsRows: [["KG-2026-A8F2B91C", "KG-2026-A8F2B91C-01"]]
-  };
-
-  function makeClient() {
-    const get = vi.fn(async () => ({
-      data: {
-        sheets: [
-          { properties: { title: "Orders", sheetId: 10 } },
-          { properties: { title: "OrderItems", sheetId: 11 } }
-        ]
-      }
-    }));
-    const batchUpdate = vi.fn(async () => ({}));
-
-    return {
-      get,
-      batchUpdate,
-      client: { spreadsheets: { get, batchUpdate } } as never
-    };
-  }
-
-  it("resolves both tab IDs in a single metadata call", async () => {
-    const { client, get } = makeClient();
-
-    await expect(resolveOrderSheetIds(client, env)).resolves.toEqual({
-      ordersSheetId: 10,
-      orderItemsSheetId: 11
-    });
-    expect(get).toHaveBeenCalledTimes(1);
-  });
-
-  it("skips the metadata round trip when tab IDs are already known", async () => {
-    const { client, get, batchUpdate } = makeClient();
-
-    await appendRowsWithClient(client, env, rows, {
-      ordersSheetId: 10,
-      orderItemsSheetId: 11
-    });
-
-    expect(get).not.toHaveBeenCalled();
-    expect(batchUpdate).toHaveBeenCalledTimes(1);
-  });
-
-  it("still resolves tab IDs when none are supplied", async () => {
-    const { client, get, batchUpdate } = makeClient();
-
-    await appendRowsWithClient(client, env, rows);
-
-    expect(get).toHaveBeenCalledTimes(1);
-    expect(batchUpdate).toHaveBeenCalledTimes(1);
   });
 });
 
