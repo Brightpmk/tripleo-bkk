@@ -261,6 +261,16 @@ export function StorefrontApp({
     focusFirstInvalidField();
   }
 
+  function navigateStep(nextStep: Step) {
+    if (!canOpenStep(nextStep, cartItems, selectedUniversityId, checkout, slipFile)) {
+      if (nextStep === "payment" && !validateCheckout()) {
+        focusFirstInvalidField();
+      }
+      return;
+    }
+    setStep(nextStep);
+  }
+
   async function selectSlip(file: File | null) {
     setSlipError("");
     setSubmissionError("");
@@ -427,7 +437,9 @@ export function StorefrontApp({
               step={step}
               cartItems={cartItems}
               universityId={selectedUniversityId}
-              onNavigate={setStep}
+              checkout={checkout}
+              slipFile={slipFile}
+              onNavigate={navigateStep}
             />
           ) : null}
 
@@ -583,11 +595,15 @@ function StepProgress({
   step,
   cartItems,
   universityId,
+  checkout,
+  slipFile,
   onNavigate
 }: {
   step: Step;
   cartItems: CartItem[];
   universityId: UniversityId | null;
+  checkout: CheckoutDetails;
+  slipFile: File | null;
   onNavigate: (step: Step) => void;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
@@ -608,7 +624,15 @@ function StepProgress({
           <button
             className="progress-step"
             aria-current={step === checkoutStep ? "step" : undefined}
-            disabled={!canOpenStep(checkoutStep, cartItems, universityId)}
+            disabled={
+              !canOpenStep(
+                checkoutStep,
+                cartItems,
+                universityId,
+                checkout,
+                slipFile
+              )
+            }
             key={checkoutStep}
             onClick={() => onNavigate(checkoutStep)}
             type="button"
@@ -1898,18 +1922,35 @@ function focusFirstInvalidField() {
 function canOpenStep(
   nextStep: Step,
   items: CartItem[],
-  universityId: UniversityId | null
+  universityId: UniversityId | null,
+  checkout?: CheckoutDetails,
+  slipFile?: File | null
 ) {
   if (!universityId) {
     return nextStep === "select";
   }
 
-  if (nextStep === "cart") {
+  if (nextStep === "shop" || nextStep === "cart") {
     return true;
   }
 
-  if (["checkout", "payment", "review"].includes(nextStep)) {
+  if (nextStep === "checkout") {
     return items.length > 0;
+  }
+
+  const isDetailsComplete =
+    items.length > 0 &&
+    Boolean(checkout?.fullName.trim()) &&
+    Boolean(checkout?.phone.trim()) &&
+    (checkout?.deliveryMethod !== "shipping" ||
+      Boolean(checkout?.shippingAddress.trim()));
+
+  if (nextStep === "payment") {
+    return isDetailsComplete;
+  }
+
+  if (nextStep === "review") {
+    return isDetailsComplete && Boolean(slipFile);
   }
 
   return true;
