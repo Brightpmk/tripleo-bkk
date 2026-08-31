@@ -1,13 +1,18 @@
 node_modules/
 .next/
+.agents/
 .next-*/
 out/
 dist/
 build/
 *.tsbuildinfo
+coverage/
+
+# Local environment and platform state
 .env
 .env*.local
 !.env.example
-coverage/
 .vercel
-.env*
+
+supabase/.temp/
+skills-lock.json

@@ -27,6 +27,13 @@ export type BlobStoreEnv = {
   BLOB_STORE_ID: string;
 };
 
+const requiredSupabaseEnvKeys = [
+  "SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY"
+] as const;
+
+export type SupabaseEnv = Record<(typeof requiredSupabaseEnvKeys)[number], string>;
+
 export function getGoogleSheetsEnv(): GoogleSheetsEnv {
   const config = Object.fromEntries(
     requiredEnvKeys.map((key) => [key, process.env[key]?.trim() ?? ""])
@@ -69,6 +76,21 @@ export function getBlobStoreEnv(): BlobStoreEnv {
   }
 
   return { BLOB_STORE_ID: storeId };
+}
+
+export function getSupabaseEnv(): SupabaseEnv {
+  const config = Object.fromEntries(
+    requiredSupabaseEnvKeys.map((key) => [key, process.env[key]?.trim() ?? ""])
+  ) as SupabaseEnv;
+  const missing = requiredSupabaseEnvKeys.filter((key) => !config[key]);
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required server environment variables: ${missing.join(", ")}`
+    );
+  }
+
+  return config;
 }
 
 export function normalizePrivateKey(privateKey: string) {

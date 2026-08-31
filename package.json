@@ -10,9 +10,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "drive:oauth": "node scripts/create-drive-refresh-token.mjs",
-    "admin:hash-password": "node scripts/hash-admin-password.mjs"
+    "admin:hash-password": "node scripts/hash-admin-password.mjs",
+    "supabase:import:dry-run": "node --env-file=.env.local --import tsx scripts/supabase-import.ts --dry-run",
+    "supabase:import": "node --env-file=.env.local --import tsx scripts/supabase-import.ts",
+    "supabase:verify": "node --env-file=.env.local --import tsx scripts/supabase-verify.ts"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "@vercel/blob": "^2.8.0",
     "@vitejs/plugin-react": "^5.0.0",
     "bcryptjs": "^3.0.3",
@@ -31,6 +35,7 @@
     "@types/react-dom": "^19.1.7",
     "eslint": "^9.34.0",
     "eslint-config-next": "^16.3.3",
+    "tsx": "^4.23.13",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
