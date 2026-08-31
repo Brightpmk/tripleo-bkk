@@ -1,9 +1,7 @@
 import { hasValidAdminSession } from "@/lib/server/admin-auth";
 import { isSameOriginRequest } from "@/lib/server/admin-request-security";
-import {
-  OrderSheetError,
-  updateAdminOrder
-} from "@/lib/server/order-admin-service";
+import { OrderAdminError } from "@/lib/server/order-admin-error";
+import { updateAdminOrder } from "@/lib/server/order-admin-service";
 
 export const runtime = "nodejs";
 
@@ -47,12 +45,12 @@ export async function PATCH(
 }
 
 /**
- * Google API internals never reach the browser: a known OrderSheetError
- * carries its own safe message, anything else becomes a flat 500 and only the
- * error's class name is logged.
+ * Storage internals never reach the browser: a known admin error carries its
+ * own safe message, anything else becomes a flat 500 and only the error's
+ * class name is logged.
  */
 function orderErrorResponse(error: unknown, fallbackMessage: string) {
-  if (error instanceof OrderSheetError) {
+  if (error instanceof OrderAdminError) {
     return Response.json(
       { ok: false, message: error.message },
       { status: error.status }

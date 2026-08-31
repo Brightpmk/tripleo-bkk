@@ -9,7 +9,7 @@ export type CartItem = {
   colorName: string;
   size: ShirtSize;
   quantity: number;
-  /** Product PRICE from the Products sheet, before any size surcharge. */
+  /** Product base price before any size surcharge. */
   basePriceThb: number;
   /** Flat per-shirt surcharge for 3XL and above. */
   sizeSurchargeThb: number;

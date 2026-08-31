@@ -8,24 +8,11 @@ import {
   universityIds,
   universitySheetValues
 } from "@/lib/catalog";
+import type { Product } from "@/lib/catalog";
 import { adminUniversities, getUniversityLabel } from "@/lib/admin-products";
-import { normalizeProductRows } from "@/lib/server/product-catalog";
 import { validateAdminProductInput } from "@/lib/server/product-admin";
-import { mapOrderToSheetRows } from "@/lib/server/order-row-mapper";
-import type { ConfirmedOrder } from "@/lib/orders";
 
 vi.mock("server-only", () => ({}));
-
-const productHeaderRow = [
-  "PRODUCT_ID",
-  "UNIVERSITY",
-  "SHIRT_COLOR",
-  "PRICE",
-  "IMAGE_URL",
-  "AVAILABLE_SIZES",
-  "ACTIVE",
-  "SORT_ORDER"
-];
 
 describe("supported universities", () => {
   it("supports exactly the eight Tripleo.bkk universities", () => {
@@ -75,21 +62,19 @@ describe("supported universities", () => {
 
 describe("all eight universities work end to end", () => {
   it("loads and filters a product for every university", () => {
-    const rows = [
-      productHeaderRow,
-      ...universities.map((university, index) => [
-        `p-${university.id}`,
-        university.sheetValue,
-        `Colour ${index}`,
-        390,
-        "",
-        "M,3XL",
-        "TRUE",
-        index
-      ])
-    ];
+    const products: Product[] = universities.map((university, index) => ({
+      id: `p-${university.id}`,
+      primaryUniversityId: university.id,
+      sellableUniversityIds: [university.id],
+      name: `Colour ${index} Shirt`,
+      colorName: `Colour ${index}`,
+      priceThb: 390,
+      image: "/products/product-placeholder.svg",
+      availableSizes: ["M", "3XL"],
+      active: true,
+      sortOrder: index
+    }));
 
-    const products = normalizeProductRows(rows);
     expect(products).toHaveLength(8);
 
     universities.forEach((university) => {
@@ -117,29 +102,10 @@ describe("all eight universities work end to end", () => {
     });
   });
 
-  it("persists the canonical sheet value on the order row", () => {
+  it("keeps canonical migrated database values for every university", () => {
     universities.forEach((university) => {
-      const order: ConfirmedOrder = {
-        orderId: "KG-2026-TEST0001",
-        createdAtIso: "2026-08-29T10:00:00.000Z",
-        universityId: university.id,
-        checkout: {
-          fullName: "Ada Lovelace",
-          phone: "0812345678",
-          deliveryMethod: "pickup",
-          shippingAddress: ""
-        },
-        items: [],
-        itemSubtotalThb: 0,
-        shippingFeeThb: 0,
-        finalTotalThb: 0,
-        paymentStatus: "pending",
-        slipSelected: true
-      };
-
-      expect(mapOrderToSheetRows(order).ordersRow[2]).toBe(
-        university.sheetValue
-      );
+      expect(university.sheetValue).toBe(university.sheetValue.toUpperCase());
+      expect(universitySheetValues).toContain(university.sheetValue);
     });
   });
 

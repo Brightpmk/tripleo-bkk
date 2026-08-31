@@ -67,7 +67,7 @@ export function getSupabaseServiceClient() {
       },
       global: {
         headers: {
-          "X-Client-Info": "kinggallery-studio-phase1-migration"
+          "X-Client-Info": "kinggallery-studio-runtime"
         }
       }
     }

@@ -1,6 +1,5 @@
 import "server-only";
 
-import { unstable_cache } from "next/cache";
 import {
   normalizeTrackingName,
   normalizeTrackingPhone,
@@ -10,34 +9,17 @@ import {
 } from "@/lib/tracking";
 import type { AdminOrderDetail } from "@/lib/orders-admin";
 import {
-  GoogleSheetsOrderRepository,
   type AdminOrderRepository
 } from "./order-repository";
-import { ADMIN_ORDERS_CACHE_TAG } from "./order-admin-service";
+import { searchSupabaseTrackingOrders } from "./supabase/order-repository";
 
 /**
- * Tracking UI -> Tracking Service -> AdminOrderRepository -> Google Sheets.
+ * Tracking UI -> Tracking Service -> Supabase.
  *
- * This module never touches a spreadsheet: it asks the repository for orders
- * and maps them into the public DTO. Swapping in a Supabase repository later
- * changes nothing here or above.
+ * Public tracking searches are server-side exact lookups over generated
+ * normalized columns. The browser never receives customer PII, slip IDs, or
+ * Supabase credentials.
  */
-
-const TRACKING_CACHE_SECONDS = 15;
-
-const defaultRepository: AdminOrderRepository = new GoogleSheetsOrderRepository();
-
-/**
- * The whole-orders snapshot is cached, not the customer's search. Filtering
- * happens per request against the cached snapshot, so no user-specific
- * response is ever shared. The cache carries the admin tag so an admin status
- * change invalidates tracking immediately rather than up to 15s later.
- */
-const loadCachedOrders = unstable_cache(
-  async () => defaultRepository.listOrders(),
-  ["tracking-orders-snapshot-v1"],
-  { revalidate: TRACKING_CACHE_SECONDS, tags: [ADMIN_ORDERS_CACHE_TAG] }
-);
 
 export class TrackingUnavailableError extends Error {
   constructor() {
@@ -68,9 +50,13 @@ export async function searchTrackedOrders(
   let orders: AdminOrderDetail[];
 
   try {
-    orders = repository ? await repository.listOrders() : await loadCachedOrders();
+    orders = repository
+      ? (await repository.listOrders()).filter((order) =>
+          matchesTrackingQuery(order, validation.mode, validation.normalized)
+        )
+      : await searchSupabaseTrackingOrders(validation.mode, validation.normalized);
   } catch (error) {
-    // Never leak the Google API error, spreadsheet ID, or range.
+    // Never leak database errors, SQL details, or customer data.
     console.error("Tracking lookup failed", {
       mode: validation.mode,
       errorName: error instanceof Error ? error.name : "UnknownError"
@@ -78,15 +64,11 @@ export async function searchTrackedOrders(
     throw new TrackingUnavailableError();
   }
 
-  const matches = orders.filter((order) =>
-    matchesTrackingQuery(order, validation.mode, validation.normalized)
-  );
-
   return {
     ok: true,
     // Newest first. Separate orders are never merged, even for the same
     // customer — ORDER_ID stays the identity.
-    orders: matches
+    orders: orders
       .slice()
       .sort(
         (a, b) =>

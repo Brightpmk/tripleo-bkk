@@ -6,9 +6,7 @@ import type {
 } from "@/lib/order-submission";
 import type { ConfirmedOrder } from "@/lib/orders";
 import type { Product } from "@/lib/catalog";
-import { appendOrderRows, prefetchOrderSheetIds } from "./google-sheets";
 import { createServerOrderId } from "./order-id";
-import { mapOrderToSheetRows } from "./order-row-mapper";
 import { validateOrderSubmission } from "./order-validation";
 import {
   GoogleDriveSlipStorage,
@@ -16,16 +14,16 @@ import {
 } from "./payment-slip-storage";
 import { validatePaymentSlipUpload } from "./payment-slip-validation";
 import { getCachedProductCatalog } from "./product-catalog";
+import { createSupabaseOrderWithItems } from "./supabase/order-repository";
 import { createPhaseTimer, logOrderTiming } from "./timing";
 
 const recentSubmissions = new Map<string, Promise<OrderSubmissionResult>>();
 const SUBMISSION_CACHE_TTL_MS = 5 * 60 * 1000;
 
 export type OrderServiceDependencies = {
-  appendRows?: typeof appendOrderRows;
   getProductCatalog?: () => Promise<Product[]>;
+  persistOrder?: (order: ConfirmedOrder) => Promise<void>;
   slipStorage?: PaymentSlipStorage;
-  prefetchSheets?: () => Promise<void>;
 };
 
 export async function submitOrderWithSlip(
@@ -70,24 +68,21 @@ async function persistOrder(
   const timer = createPhaseTimer();
   const getProductCatalog =
     dependencies.getProductCatalog ?? getCachedProductCatalog;
-  const prefetchSheets = dependencies.prefetchSheets ?? prefetchOrderSheetIds;
 
-  // Three independent reads, none of which mutate anything:
+  // Two independent reads, neither of which mutates anything:
   //   - the canonical catalog (network)
   //   - decoding and sniffing the slip bytes (CPU)
-  //   - warming the Sheets auth token and tab IDs (network)
-  // Running them together removes two full round trips from the wait.
-  // The warm-up never rejects, so it cannot fail the order.
+  // Running them together keeps validation responsive without changing order
+  // durability semantics.
   const catalogRead = timer.track("catalogMs", getProductCatalog());
   const slipRead = timer.track("slipDecodeMs", validatePaymentSlipUpload(slipFile));
-  const sheetsWarmup = timer.track("sheetsWarmupMs", prefetchSheets());
 
   let products: Product[];
 
   try {
     products = await catalogRead;
   } catch (error) {
-    await settle(slipRead, sheetsWarmup);
+    await settle(slipRead);
     console.error("Product catalog load failed before order validation", {
       errorName: error instanceof Error ? error.name : "UnknownError"
     });
@@ -104,7 +99,7 @@ async function persistOrder(
   timer.mark("validateMs");
 
   if (!validation.ok) {
-    await settle(slipRead, sheetsWarmup);
+    await settle(slipRead);
     logOrderTiming(timer, { outcome: "invalid-order" });
 
     return {
@@ -117,7 +112,6 @@ async function persistOrder(
   const slipValidation = await slipRead;
 
   if (!slipValidation.ok) {
-    await settle(sheetsWarmup);
     logOrderTiming(timer, { outcome: "invalid-slip" });
 
     return {
@@ -126,13 +120,10 @@ async function persistOrder(
     };
   }
 
-  // Everything above is read-only. Past this point we start writing, so the
-  // warm-up must be finished before the append can benefit from it.
-  await settle(sheetsWarmup);
-
   const now = new Date();
   const slipStorage = dependencies.slipStorage ?? new GoogleDriveSlipStorage();
-  const appendRows = dependencies.appendRows ?? appendOrderRows;
+  const persistOrder =
+    dependencies.persistOrder ?? createSupabaseOrderWithItems;
   let uploadedSlipFileId: string | null = null;
 
   const order: ConfirmedOrder = {
@@ -154,13 +145,11 @@ async function persistOrder(
     uploadedSlipFileId = uploadedSlip.fileId;
 
     await timer.track(
-      "sheetsWriteMs",
-      appendRows(
-        mapOrderToSheetRows({
-          ...order,
-          slipFileId: uploadedSlip.fileId
-        })
-      )
+      "orderWriteMs",
+      persistOrder({
+        ...order,
+        slipFileId: uploadedSlip.fileId
+      })
     );
   } catch (error) {
     if (uploadedSlipFileId) {

@@ -3,19 +3,16 @@ import "server-only";
 import {
   adminProductSizes,
   adminUniversities,
-  type AdminProduct,
   type AdminProductInput,
   type AdminUniversity
 } from "@/lib/admin-products";
-import { productImagePlaceholder } from "@/lib/catalog";
-import {
-  appendProductRow,
-  deleteProductRow,
-  readProductRows,
-  updateProductRow
-} from "./google-sheets";
 import { ProductAdminError } from "./product-admin-error";
-import { getProductHeaderMap } from "./product-sheet";
+import {
+  createSupabaseProduct,
+  deleteSupabaseProduct,
+  listSupabaseProducts,
+  updateSupabaseProduct
+} from "./supabase/product-repository";
 
 export { ProductAdminError } from "./product-admin-error";
 export type RawProductInput = Record<string, unknown>;
@@ -23,12 +20,12 @@ export type RawProductInput = Record<string, unknown>;
 const productIdPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$/;
 
 export async function listAdminProducts() {
-  return normalizeAdminProductRows(await readProductRows());
+  return listSupabaseProducts();
 }
 
 export async function createAdminProduct(raw: RawProductInput) {
   const product = validateAdminProductInput(raw);
-  await appendProductRow(product);
+  await createSupabaseProduct(product);
   return product;
 }
 
@@ -44,7 +41,7 @@ export async function updateAdminProduct(
     });
   }
 
-  await updateProductRow(productId, product);
+  await updateSupabaseProduct(productId, product);
   return product;
 }
 
@@ -53,7 +50,7 @@ export async function deleteAdminProduct(productId: string) {
     throw new ProductAdminError("Product was not found.", 404);
   }
 
-  await deleteProductRow(productId);
+  await deleteSupabaseProduct(productId);
 }
 
 export function isValidProductId(value: unknown) {
@@ -134,40 +131,6 @@ export function validateAdminProductInput(raw: RawProductInput): AdminProductInp
   };
 }
 
-export function normalizeAdminProductRows(rows: unknown[][]): AdminProduct[] {
-  if (rows.length === 0) {
-    throw new ProductAdminError("Products sheet is unavailable.", 500);
-  }
-
-  const headerMap = getProductHeaderMap(rows[0]);
-  const products = rows.slice(1).flatMap((row) => {
-    const productId = cellString(row[headerMap.PRODUCT_ID]);
-
-    if (!productId) return [];
-
-    return [
-      validateAdminProductInput({
-        productId,
-        university: row[headerMap.UNIVERSITY],
-        shirtColor: row[headerMap.SHIRT_COLOR],
-        priceThb: row[headerMap.PRICE],
-        imageUrl: normalizeAdminImageUrl(row[headerMap.IMAGE_URL]),
-        availableSizes: cellString(row[headerMap.AVAILABLE_SIZES]).split(","),
-        active: row[headerMap.ACTIVE],
-        sortOrder: row[headerMap.SORT_ORDER]
-      })
-    ];
-  });
-
-  return products.sort(
-    (a, b) =>
-      a.sortOrder - b.sortOrder ||
-      a.university.localeCompare(b.university) ||
-      a.shirtColor.localeCompare(b.shirtColor) ||
-      a.productId.localeCompare(b.productId)
-  );
-}
-
 function normalizeSubmittedSizes(value: unknown) {
   if (!Array.isArray(value)) return null;
 
@@ -214,16 +177,6 @@ function isValidImageUrl(value: string) {
   }
 }
 
-function normalizeAdminImageUrl(value: unknown) {
-  const imageUrl = asTrimmedString(value);
-
-  return isValidImageUrl(imageUrl) ? imageUrl : productImagePlaceholder;
-}
-
 function asTrimmedString(value: unknown) {
   return value === null || value === undefined ? "" : String(value).trim();
-}
-
-function cellString(value: unknown) {
-  return asTrimmedString(value);
 }

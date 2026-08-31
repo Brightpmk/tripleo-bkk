@@ -1,7 +1,7 @@
 /**
  * Size surcharge — global business rule.
  *
- * XS through 2XL sell at the product's base PRICE from the Products sheet.
+ * XS through 2XL sell at the product's base price.
  * Every size from 3XL upwards carries a flat surcharge, charged per shirt
  * (per unit, not per order line).
  *

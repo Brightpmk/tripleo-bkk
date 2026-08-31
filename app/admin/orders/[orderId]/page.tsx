@@ -31,7 +31,7 @@ export default async function AdminOrderDetailPage({
       errorName: error instanceof Error ? error.name : "UnknownError"
     });
     loadError =
-      "This order could not be loaded from Google Sheets. Please try again in a moment.";
+      "This order could not be loaded from Supabase. Please try again in a moment.";
   }
 
   return (

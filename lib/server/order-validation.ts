@@ -98,9 +98,8 @@ export function validateOrderSubmission(
         fieldErrors[`${itemPrefix}.size`] = "Select a supported size.";
       }
 
-      // Canonical price: the sheet's base PRICE plus the surcharge this
-      // server derives from the size. The client's number is only ever
-      // compared against this, never used.
+      // Canonical price: product base price plus the surcharge this server
+      // derives from the size. The client's number is only compared.
       const sizeSurchargeThb = isAvailableSize(product, item.size)
         ? getSizeSurchargeThb(item.size)
         : 0;
