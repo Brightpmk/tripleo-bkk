@@ -91,7 +91,7 @@ export function TrackingView() {
           <div className="section-head">
             <div className="section-head-text">
               <p className="eyebrow">Order tracking</p>
-              <h1 className="display-lg">Track your order</h1>
+              <h1 className="display-lg">Track your <span className="serif-accent">order</span></h1>
             </div>
           </div>
 

@@ -512,7 +512,7 @@ export function StorefrontApp({
       <footer className="site-footer">
         <span className="site-footer-brand">Tripleo.bkk</span>
         <span className="site-footer-note">
-          Premium university streetwear · Bangkok
+          Premium university streetwear · <span className="serif-italic">Bangkok</span>
         </span>
       </footer>
     </main>
@@ -535,7 +535,7 @@ function UniversitySection({
           <h1 className="display-xl">
             Select your
             <br />
-            university
+            <span className="serif-accent">university</span>
           </h1>
           <p className="lede">
             Limited shirt drops for eight Thai universities. Choose your
@@ -655,7 +655,7 @@ function ShopSection({
       <div className="section-head">
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
-          <h2 className="display-lg">The Collection</h2>
+          <h2 className="display-lg">The <span className="serif-accent">Collection</span></h2>
         </div>
       </div>
 
@@ -838,7 +838,7 @@ function CartSection({
       <div className="section-head">
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
-          <h2 className="display-lg">Your Cart</h2>
+          <h2 className="display-lg">Your <span className="serif-accent">Cart</span></h2>
         </div>
         {items.length > 0 ? (
           <div className="section-head-actions">
@@ -989,7 +989,7 @@ function CheckoutSection({
       <div className="section-head">
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
-          <h2 className="display-lg">Your Details</h2>
+          <h2 className="display-lg">Your <span className="serif-accent">Details</span></h2>
         </div>
       </div>
 
@@ -1216,7 +1216,7 @@ function PaymentSection({
       <div className="section-head">
         <div className="section-head-text">
           <p className="eyebrow">Payment</p>
-          <h2 className="display-lg">Transfer &amp; Upload</h2>
+          <h2 className="display-lg">Transfer &amp; <span className="serif-accent">Upload</span></h2>
         </div>
       </div>
 
@@ -1405,7 +1405,7 @@ function ReviewSection({
       <div className="section-head">
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
-          <h2 className="display-lg">Review Order</h2>
+          <h2 className="display-lg">Review <span className="serif-accent">Order</span></h2>
         </div>
       </div>
 
@@ -1604,7 +1604,7 @@ function SuccessSection({
         <span className="done-mark" aria-hidden="true">
           ✓
         </span>
-        <h2 className="display-lg">Order placed</h2>
+        <h2 className="display-lg">Order <span className="serif-accent">Placed</span></h2>
         <p className="lede">
           Save your order ID. You&apos;ll need it if you contact us about this
           order.

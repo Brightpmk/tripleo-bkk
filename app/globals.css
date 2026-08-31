@@ -49,6 +49,7 @@
     "Segoe UI", Roboto, Helvetica, Arial, "Leelawadee UI", "Noto Sans Thai",
     Thonburi, sans-serif;
   --font-display: var(--font-body);
+  --font-serif: var(--font-serif), "Cormorant Garamond", Garamond, Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
 
   /* Space */
@@ -241,6 +242,23 @@ legend {
   color: var(--ink-3);
 }
 
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.serif-accent {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.serif-italic {
+  font-family: var(--font-serif);
+  font-style: italic;
+}
+
 /* ── App shell ──────────────────────────────────────────────────── */
 .app-shell {
   display: flex;
@@ -283,9 +301,10 @@ legend {
   padding: 0;
   border: 0;
   background: none;
-  font-size: 0.9375rem;
-  font-weight: 800;
-  letter-spacing: 0.22em;
+  font-family: var(--font-serif);
+  font-size: 1.1875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink);
   white-space: nowrap;
@@ -2272,9 +2291,10 @@ legend {
 }
 
 .site-footer-brand {
-  font-size: 0.8125rem;
-  font-weight: 800;
-  letter-spacing: 0.16em;
+  font-family: var(--font-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink);
 }
