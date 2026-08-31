@@ -218,7 +218,6 @@ export function StorefrontApp({
         quantity: choice.quantity
       })
     );
-    setStep("cart");
   }
 
   function validateCheckout() {
@@ -559,11 +558,12 @@ function UniversitySection({
               key={university.id}
               onClick={() => onSelect(university.id)}
               type="button"
-              aria-label={`${university.brand} — ${university.fullName}`}
+              aria-label={`${university.brand} — ${university.fullName} (${university.thaiName})`}
             >
               <span className="uni-card-text">
                 <span className="uni-card-brand">{university.brand}</span>
                 <span className="uni-card-uni">{university.shortName}</span>
+                <span className="uni-card-thai">{university.thaiName}</span>
               </span>
               <span className="uni-card-go" aria-hidden="true">
                 →
@@ -650,6 +650,16 @@ function ShopSection({
   onChoiceChange: (productId: string, choice: Partial<ProductChoice>) => void;
   onAddProduct: (product: Product) => void;
 }) {
+  const [addedProductId, setAddedProductId] = useState<string | null>(null);
+
+  function handleAddProduct(product: Product) {
+    onAddProduct(product);
+    setAddedProductId(product.id);
+    setTimeout(() => {
+      setAddedProductId((current) => (current === product.id ? null : current));
+    }, 1200);
+  }
+
   return (
     <section className="step-section" id="shop">
       <div className="section-head">
@@ -794,11 +804,15 @@ function ShopSection({
                     }
                   />
                   <button
-                    className="btn btn-primary"
+                    className={`btn ${
+                      addedProductId === product.id
+                        ? "btn-secondary"
+                        : "btn-primary"
+                    }`}
                     type="button"
-                    onClick={() => onAddProduct(product)}
+                    onClick={() => handleAddProduct(product)}
                   >
-                    Add to cart
+                    {addedProductId === product.id ? "Added ✓" : "Add to cart"}
                   </button>
                 </div>
               </article>

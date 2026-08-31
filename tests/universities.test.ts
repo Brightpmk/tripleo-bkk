@@ -36,6 +36,7 @@ describe("supported universities", () => {
       expect(university.brand).toMatch(/^[a-z]+\.swagclub$/);
       expect(university.shortName.length).toBeGreaterThan(0);
       expect(university.fullName.length).toBeGreaterThan(0);
+      expect(university.thaiName.length).toBeGreaterThan(0);
     });
   });
 

@@ -41,6 +41,8 @@ export type University = {
   shortName: string;
   /** Full official university name, used for accessible labels. */
   fullName: string;
+  /** Official Thai university name. */
+  thaiName: string;
 };
 
 export type Product = {
@@ -64,7 +66,8 @@ export const universities: University[] = [
     sheetValue: "MAHASARAKHAM",
     brand: "msu.swagclub",
     shortName: "Mahasarakham",
-    fullName: "Mahasarakham University"
+    fullName: "Mahasarakham University",
+    thaiName: "มหาวิทยาลัยมหาสารคาม"
   },
   {
     id: "bangkok-thonburi",
@@ -72,7 +75,8 @@ export const universities: University[] = [
     sheetValue: "BANGKOK THONBURI",
     brand: "btu.swagclub",
     shortName: "Bangkok Thonburi",
-    fullName: "Bangkok Thonburi University"
+    fullName: "Bangkok Thonburi University",
+    thaiName: "มหาวิทยาลัยกรุงเทพธนบุรี"
   },
   {
     id: "ramkhamhaeng",
@@ -80,7 +84,8 @@ export const universities: University[] = [
     sheetValue: "RAMKHAMHAENG",
     brand: "ru.swagclub",
     shortName: "Ramkhamhaeng",
-    fullName: "Ramkhamhaeng University"
+    fullName: "Ramkhamhaeng University",
+    thaiName: "มหาวิทยาลัยรามคำแหง"
   },
   {
     id: "mae-fah-luang",
@@ -88,7 +93,8 @@ export const universities: University[] = [
     sheetValue: "MAE FAH LUANG",
     brand: "mfu.swagclub",
     shortName: "Mae Fah Luang",
-    fullName: "Mae Fah Luang University"
+    fullName: "Mae Fah Luang University",
+    thaiName: "มหาวิทยาลัยแม่ฟ้าหลวง"
   },
   {
     id: "maejo",
@@ -96,7 +102,8 @@ export const universities: University[] = [
     sheetValue: "MAEJO",
     brand: "mju.swagclub",
     shortName: "Maejo",
-    fullName: "Maejo University"
+    fullName: "Maejo University",
+    thaiName: "มหาวิทยาลัยแม่โจ้"
   },
   {
     id: "bangmod",
@@ -104,7 +111,8 @@ export const universities: University[] = [
     sheetValue: "BANGMOD",
     brand: "bm.swagclub",
     shortName: "Bangmod",
-    fullName: "King Mongkut's University of Technology Thonburi"
+    fullName: "King Mongkut's University of Technology Thonburi",
+    thaiName: "มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าธนบุรี"
   },
   {
     id: "north-bangkok",
@@ -112,7 +120,8 @@ export const universities: University[] = [
     sheetValue: "NORTH BANGKOK",
     brand: "nb.swagclub",
     shortName: "North Bangkok",
-    fullName: "King Mongkut's University of Technology North Bangkok"
+    fullName: "King Mongkut's University of Technology North Bangkok",
+    thaiName: "มหาวิทยาลัยเทคโนโลยีพระจอมเกล้าพระนครเหนือ"
   },
   {
     id: "ladkrabang",
@@ -120,7 +129,8 @@ export const universities: University[] = [
     sheetValue: "LADKRABANG",
     brand: "lkb.swagclub",
     shortName: "Ladkrabang",
-    fullName: "King Mongkut's Institute of Technology Ladkrabang"
+    fullName: "King Mongkut's Institute of Technology Ladkrabang",
+    thaiName: "สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง"
   }
 ];
 
