@@ -514,9 +514,6 @@ export function StorefrontApp({
         <span className="site-footer-note">
           Premium university streetwear · Bangkok
         </span>
-        <Link className="site-footer-link" href="/tracking">
-          Track order
-        </Link>
       </footer>
     </main>
   );
@@ -758,9 +755,8 @@ function ShopSection({
                           <button
                             key={size}
                             type="button"
-                            className={`size-opt${
-                              selectedSize === size ? " is-selected" : ""
-                            }`}
+                            className={`size-opt${selectedSize === size ? " is-selected" : ""
+                              }`}
                             aria-pressed={selectedSize === size}
                             aria-label={
                               surcharge > 0
@@ -1279,9 +1275,8 @@ function PaymentSection({
         <h3 className="pay-steps-title">Payment slip</h3>
 
         <label
-          className={`upload${slipFile ? " has-file" : ""}${
-            slipOptimizing ? " is-busy" : ""
-          }`}
+          className={`upload${slipFile ? " has-file" : ""}${slipOptimizing ? " is-busy" : ""
+            }`}
         >
           {slipOptimizing ? (
             <>
@@ -1519,9 +1514,8 @@ function ReviewSection({
             aria-valuenow={submitStage === "uploading" ? uploadPercent : undefined}
           >
             <span
-              className={`submit-progress-fill${
-                submitStage === "confirming" ? " is-indeterminate" : ""
-              }`}
+              className={`submit-progress-fill${submitStage === "confirming" ? " is-indeterminate" : ""
+                }`}
               style={
                 submitStage === "uploading"
                   ? { width: `${uploadPercent}%` }
