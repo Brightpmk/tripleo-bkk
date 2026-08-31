@@ -804,11 +804,10 @@ function ShopSection({
                     }
                   />
                   <button
-                    className={`btn ${
-                      addedProductId === product.id
-                        ? "btn-secondary"
-                        : "btn-primary"
-                    }`}
+                    className={`btn ${addedProductId === product.id
+                      ? "btn-secondary"
+                      : "btn-primary"
+                      }`}
                     type="button"
                     onClick={() => handleAddProduct(product)}
                   >
@@ -1077,7 +1076,7 @@ function CheckoutSection({
                   </span>
                 ) : (
                   <span className="field-hint" id="checkout-phone-hint">
-                    We use this to reach you about pickup or delivery.
+                    ใช้สำหรับติดต่อเรื่องการรับหรือจัดส่งสินค้า
                   </span>
                 )}
               </div>
@@ -1121,8 +1120,8 @@ function CheckoutSection({
                         </span>
                         <span className="choice-desc">
                           {method === "pickup"
-                            ? `Collect at ${university.shortName}.`
-                            : "Delivered to your address (50 THB for 1–10 shirts, +10 THB per extra shirt)."}
+                            ? `รับสินค้าด้วยตนเองที่ ${university.shortName}`
+                            : "จัดส่งพัสดุ (สั่งเกิน 10 ตัวขึ้นไป +10 บาท/ตัว)"}
                         </span>
                       </span>
                     </label>
@@ -1159,7 +1158,7 @@ function CheckoutSection({
                       ? "checkout-address-error"
                       : "checkout-address-hint"
                   }
-                  placeholder={"House no., street, sub-district\nDistrict, province, postcode"}
+                  placeholder={"บ้านเลขที่, ซอย/ถนน, แขวง/ตำบล\nเขต/อำเภอ, จังหวัด, รหัสไปรษณีย์"}
                 />
                 {errors.shippingAddress ? (
                   <span className="field-error" id="checkout-address-error">
