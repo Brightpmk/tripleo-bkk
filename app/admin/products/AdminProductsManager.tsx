@@ -19,7 +19,7 @@ const emptyProduct: AdminProduct = {
   productId: "",
   university: adminUniversities[0],
   shirtColor: "",
-  priceThb: 390,
+  priceThb: 300,
   imageUrl: "",
   availableSizes: [...adminProductSizes],
   active: true,
@@ -67,8 +67,8 @@ export function AdminProductsManager({
       const next = created
         ? [...current, product]
         : current.map((item) =>
-            item.productId === product.productId ? product : item
-          );
+          item.productId === product.productId ? product : item
+        );
       return next.sort((a, b) => a.sortOrder - b.sortOrder);
     });
     setNotice({
@@ -85,13 +85,13 @@ export function AdminProductsManager({
     setNotice(
       imageCleanup === "failed"
         ? {
-            tone: "warning",
-            text: `"${product.shirtColor}" was deleted, but its image could not be removed from storage. It can be cleaned up manually later.`
-          }
+          tone: "warning",
+          text: `"${product.shirtColor}" was deleted, but its image could not be removed from storage. It can be cleaned up manually later.`
+        }
         : {
-            tone: "success",
-            text: `"${product.shirtColor}" was permanently deleted.`
-          }
+          tone: "success",
+          text: `"${product.shirtColor}" was permanently deleted.`
+        }
     );
     closeEditor();
   }
