@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -54,6 +55,7 @@ type ProductChoice = {
 type StorefrontAppProps = {
   initialProducts: Product[];
   catalogError?: string;
+  initialStep?: Step;
 };
 
 const MAX_LINE_QUANTITY = 20;
@@ -93,7 +95,8 @@ const checkoutSteps: Step[] = [
 
 export function StorefrontApp({
   initialProducts,
-  catalogError = ""
+  catalogError = "",
+  initialStep
 }: StorefrontAppProps) {
   // Cart and campus live in the shared provider so a trip to a product
   // detail route does not discard them. All pricing rules are unchanged.
@@ -103,7 +106,13 @@ export function StorefrontApp({
     universityId: selectedUniversityId,
     setUniversityId: setSelectedUniversityId
   } = useCart();
-  const [step, setStep] = useState<Step>("select");
+  const searchParams = useSearchParams();
+  const stepParam = searchParams?.get("step");
+
+  const [step, setStep] = useState<Step>(() => {
+    if (initialStep) return initialStep;
+    return "select";
+  });
   const [choices, setChoices] = useState<Record<string, ProductChoice>>(() =>
     Object.fromEntries(
       initialProducts.map((product) => [
@@ -131,12 +140,34 @@ export function StorefrontApp({
   const [order, setOrder] = useState<ConfirmedOrder | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const selectedUniversity = selectedUniversityId
-    ? getUniversityById(selectedUniversityId)
+  const effectiveUniversityId =
+    selectedUniversityId || cartItems[0]?.universityId || null;
+  const selectedUniversity = effectiveUniversityId
+    ? getUniversityById(effectiveUniversityId)
     : null;
-  const availableProducts = selectedUniversityId
-    ? getProductsForUniversity(initialProducts, selectedUniversityId)
+  const availableProducts = effectiveUniversityId
+    ? getProductsForUniversity(initialProducts, effectiveUniversityId)
     : [];
+
+  useEffect(() => {
+    if (effectiveUniversityId && !selectedUniversityId) {
+      setSelectedUniversityId(effectiveUniversityId);
+    }
+  }, [effectiveUniversityId, selectedUniversityId, setSelectedUniversityId]);
+
+  useEffect(() => {
+    if (stepParam === "cart") {
+      setStep("cart");
+    } else if (stepParam === "shop") {
+      setStep("shop");
+    } else if (
+      typeof window !== "undefined" &&
+      window.location.hash === "#cart"
+    ) {
+      setStep("cart");
+    }
+  }, [stepParam]);
+
   const totals = useMemo(
     () => calculateOrderTotals(cartItems, checkout.deliveryMethod),
     [cartItems, checkout.deliveryMethod]
@@ -189,7 +220,9 @@ export function StorefrontApp({
 
     setSelectedUniversityId(universityId);
     setStep("shop");
-    window.history.replaceState(null, "", `#shop-${universityId}`);
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", `#shop-${universityId}`);
+    }
   }
 
   function updateChoice(productId: string, nextChoice: Partial<ProductChoice>) {
@@ -203,7 +236,7 @@ export function StorefrontApp({
   }
 
   function addProduct(product: Product) {
-    if (!selectedUniversityId) {
+    if (!effectiveUniversityId) {
       return;
     }
 
@@ -219,7 +252,7 @@ export function StorefrontApp({
     setCartItems((current) =>
       addCartItem(current, {
         product,
-        universityId: selectedUniversityId,
+        universityId: effectiveUniversityId,
         size: selectedSize,
         quantity: choice.quantity
       })
@@ -311,7 +344,7 @@ export function StorefrontApp({
   }
 
   async function confirmOrder() {
-    if (!selectedUniversityId || !slipFile || cartItems.length === 0 || isSubmitting) {
+    if (!effectiveUniversityId || !slipFile || cartItems.length === 0 || isSubmitting) {
       return;
     }
 
@@ -322,7 +355,7 @@ export function StorefrontApp({
 
     try {
       const orderPayload = {
-        universityId: selectedUniversityId,
+        universityId: effectiveUniversityId,
         checkout,
         slipSelected: true,
         submissionKey,
@@ -420,7 +453,7 @@ export function StorefrontApp({
               className="cart-btn"
               type="button"
               onClick={() => setStep(cartItems.length > 0 ? "cart" : "shop")}
-              disabled={!selectedUniversityId}
+              disabled={!effectiveUniversityId}
               aria-label={
                 cartCount === 1 ? "Cart, 1 item" : `Cart, ${cartCount} items`
               }
@@ -436,7 +469,7 @@ export function StorefrontApp({
         </div>
       </header>
 
-      {step === "select" ? (
+      {step === "select" || !selectedUniversity ? (
         <UniversitySection onSelect={selectUniversity} />
       ) : (
         <div className="content-container">
@@ -444,7 +477,7 @@ export function StorefrontApp({
             <StepProgress
               step={step}
               cartItems={cartItems}
-              universityId={selectedUniversityId}
+              universityId={effectiveUniversityId}
               checkout={checkout}
               slipFile={slipFile}
               onNavigate={navigateStep}
@@ -475,7 +508,16 @@ export function StorefrontApp({
                 setCartItems((current) => removeCartItem(current, lineId))
               }
               onContinue={() => setStep("checkout")}
-              onShop={() => setStep("shop")}
+              onShop={() => {
+                setStep("shop");
+                if (typeof window !== "undefined" && window.location.search) {
+                  window.history.replaceState(
+                    null,
+                    "",
+                    effectiveUniversityId ? `#shop-${effectiveUniversityId}` : "/"
+                  );
+                }
+              }}
             />
           ) : null}
 

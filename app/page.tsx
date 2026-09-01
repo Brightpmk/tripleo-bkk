@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { StorefrontApp } from "@/components/StorefrontApp";
 import type { Product } from "@/lib/catalog";
 import {
@@ -8,7 +9,17 @@ import {
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-export default async function Home() {
+export default async function Home(props: {
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const searchParams = props.searchParams ? await props.searchParams : {};
+  const initialStep =
+    searchParams.step === "cart"
+      ? "cart"
+      : searchParams.step === "shop"
+      ? "shop"
+      : undefined;
+
   let products: Product[] = [];
   let catalogError = "";
 
@@ -20,7 +31,15 @@ export default async function Home() {
       "Product catalog is unavailable right now. Please try again in a moment.";
   }
 
-  return <StorefrontApp initialProducts={products} catalogError={catalogError} />;
+  return (
+    <Suspense fallback={null}>
+      <StorefrontApp
+        initialProducts={products}
+        catalogError={catalogError}
+        initialStep={initialStep}
+      />
+    </Suspense>
+  );
 }
 
 function getCatalogErrorDiagnostics(error: unknown) {

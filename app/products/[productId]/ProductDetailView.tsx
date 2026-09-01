@@ -66,20 +66,34 @@ export function ProductDetailView({ product }: { product: Product }) {
           <Link className="wordmark" href="/">
             Tripleo.bkk
           </Link>
-        </div>
-        <Link className="cart-btn" href="/">
-          Cart
-          {cartCount > 0 ? (
-            <span className="cart-btn-count" aria-hidden="true">
-              {cartCount}
+          {university ? (
+            <span className="uni-tag" title={university.fullName}>
+              <span className="uni-dot" aria-hidden="true" />
+              {university.brand}
             </span>
           ) : null}
-        </Link>
+        </div>
+        <div className="header-right">
+          <Link className="track-nav-btn" href="/tracking">
+            Track order
+          </Link>
+          <Link className="cart-btn" href="/?step=cart">
+            Cart
+            {cartCount > 0 ? (
+              <span className="cart-btn-count" aria-hidden="true">
+                {cartCount}
+              </span>
+            ) : null}
+          </Link>
+        </div>
       </header>
 
       <div className="content-container">
         <section className="step-section detail-section">
-          <Link className="detail-back" href="/">
+          <Link
+            className="detail-back"
+            href={university ? "/?step=shop" : "/"}
+          >
             ← Back to shop
           </Link>
 
@@ -204,7 +218,7 @@ export function ProductDetailView({ product }: { product: Product }) {
               </dl>
               <div className="action-bar-row">
                 {added ? (
-                  <Link className="btn btn-primary" href="/">
+                  <Link className="btn btn-primary" href="/?step=cart">
                     View cart
                   </Link>
                 ) : (
