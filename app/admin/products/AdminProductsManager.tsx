@@ -301,7 +301,10 @@ function ProductEditor({
 
   // Multi-image state for product creation
   const [createdImages, setCreatedImages] = useState<File[]>([]);
-  const [createdPreviews, setCreatedPreviews] = useState<string[]>([]);
+  const createdPreviews = useMemo(
+    () => createdImages.map((file) => URL.createObjectURL(file)),
+    [createdImages]
+  );
   const [optimizingCreatedImages, setOptimizingCreatedImages] = useState(false);
   const [createdImageNotice, setCreatedImageNotice] = useState("");
 
@@ -314,13 +317,10 @@ function ProductEditor({
   const busy = saving || deleting;
 
   useEffect(() => {
-    const urls = createdImages.map((file) => URL.createObjectURL(file));
-    setCreatedPreviews(urls);
-
     return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
+      createdPreviews.forEach((url) => URL.revokeObjectURL(url));
     };
-  }, [createdImages]);
+  }, [createdPreviews]);
 
   // Lock the page behind the drawer and move focus into it — once.
   useEffect(() => {

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "./CartProvider";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, startTransition } from "react";
 import {
   getAvailableDeliveryMethods,
   getProductsForUniversity,
@@ -157,14 +157,20 @@ export function StorefrontApp({
 
   useEffect(() => {
     if (stepParam === "cart") {
-      setStep("cart");
+      startTransition(() => {
+        setStep("cart");
+      });
     } else if (stepParam === "shop") {
-      setStep("shop");
+      startTransition(() => {
+        setStep("shop");
+      });
     } else if (
       typeof window !== "undefined" &&
       window.location.hash === "#cart"
     ) {
-      setStep("cart");
+      startTransition(() => {
+        setStep("cart");
+      });
     }
   }, [stepParam]);
 

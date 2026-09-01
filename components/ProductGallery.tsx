@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { productImagePlaceholder } from "@/lib/catalog";
 
 /**
@@ -12,6 +12,12 @@ import { productImagePlaceholder } from "@/lib/catalog";
  * full-screen.
  */
 
+function clampAspectRatio(ratio: number): number {
+  if (!Number.isFinite(ratio) || ratio <= 0) return 1;
+  // Allow from tall portrait (~0.65) to wide landscape (~2.4)
+  return Math.max(0.65, Math.min(2.4, ratio));
+}
+
 export function ProductGallery({
   images,
   alt
@@ -19,10 +25,50 @@ export function ProductGallery({
   images: string[];
   alt: string;
 }) {
-  const gallery = images.length > 0 ? images : [productImagePlaceholder];
+  const gallery = useMemo(
+    () => (images.length > 0 ? images : [productImagePlaceholder]),
+    [images]
+  );
   const [index, setIndex] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [aspectRatios, setAspectRatios] = useState<Record<number, number>>({});
   const trackRef = useRef<HTMLDivElement>(null);
+
+  const handleImageLoad = useCallback(
+    (position: number, event: React.SyntheticEvent<HTMLImageElement>) => {
+      const { naturalWidth, naturalHeight } = event.currentTarget;
+      if (naturalWidth && naturalHeight) {
+        const ratio = clampAspectRatio(naturalWidth / naturalHeight);
+        setAspectRatios((prev) =>
+          prev[position] === ratio ? prev : { ...prev, [position]: ratio }
+        );
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    gallery.forEach((src, pos) => {
+      if (!src) return;
+      const img = new Image();
+      img.src = src;
+      if (img.complete && img.naturalWidth && img.naturalHeight) {
+        const ratio = clampAspectRatio(img.naturalWidth / img.naturalHeight);
+        setAspectRatios((prev) =>
+          prev[pos] === ratio ? prev : { ...prev, [pos]: ratio }
+        );
+      } else {
+        img.onload = () => {
+          if (img.naturalWidth && img.naturalHeight) {
+            const ratio = clampAspectRatio(img.naturalWidth / img.naturalHeight);
+            setAspectRatios((prev) =>
+              prev[pos] === ratio ? prev : { ...prev, [pos]: ratio }
+            );
+          }
+        };
+      }
+    });
+  }, [gallery]);
 
   const onScroll = useCallback(() => {
     const track = trackRef.current;
@@ -43,6 +89,8 @@ export function ProductGallery({
     track?.scrollTo({ left: clamped * track.clientWidth, behavior: "smooth" });
   }
 
+  const currentRatio = aspectRatios[index] ?? aspectRatios[0] ?? null;
+
   return (
     <>
       <section className="gallery" aria-roledescription="carousel" aria-label="Product images">
@@ -53,6 +101,14 @@ export function ProductGallery({
           tabIndex={0}
           role="group"
           aria-label={`Image ${index + 1} of ${gallery.length}`}
+          style={
+            currentRatio
+              ? ({
+                  "--gallery-aspect": `${currentRatio}`,
+                  aspectRatio: `${currentRatio}`
+                } as React.CSSProperties)
+              : undefined
+          }
           onKeyDown={(event) => {
             if (event.key === "ArrowRight") {
               event.preventDefault();
@@ -78,6 +134,8 @@ export function ProductGallery({
                 alt={`${alt} — image ${position + 1} of ${gallery.length}`}
                 // Only the cover is worth blocking first paint for.
                 priority={position === 0}
+                contain
+                onLoad={(event) => handleImageLoad(position, event)}
               />
             </button>
           ))}
@@ -261,25 +319,38 @@ function GalleryImage({
   src,
   alt,
   priority = false,
-  contain = false
+  contain = false,
+  onLoad
 }: {
   src: string;
   alt: string;
   priority?: boolean;
   contain?: boolean;
+  onLoad?: (event: React.SyntheticEvent<HTMLImageElement>) => void;
 }) {
   const [resolved, setResolved] = useState(src || productImagePlaceholder);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    if (imgRef.current?.complete && imgRef.current.naturalWidth && onLoad) {
+      onLoad({
+        currentTarget: imgRef.current
+      } as React.SyntheticEvent<HTMLImageElement>);
+    }
+  }, [resolved, onLoad]);
 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
+      ref={imgRef}
       src={resolved}
       alt={alt}
       className={contain ? "is-contain" : undefined}
       loading={priority ? "eager" : "lazy"}
       decoding={priority ? "sync" : "async"}
       // Stored images are capped at 1600px on the long edge.
-      sizes="(min-width: 1024px) 560px, 100vw"
+      sizes="(min-width: 720px) 720px, 100vw"
+      onLoad={onLoad}
       onError={() => setResolved(productImagePlaceholder)}
     />
   );
