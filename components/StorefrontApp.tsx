@@ -2,16 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCart } from "./CartProvider";
 import { useEffect, useMemo, useRef, useState, startTransition } from "react";
 import {
   getAvailableDeliveryMethods,
   getProductsForUniversity,
+  getShopPath,
   getUniversityById,
   isDeliveryMethodAllowed,
   productImagePlaceholder,
-  universities,
   type ShirtSize,
   type Product,
   type University,
@@ -20,6 +20,7 @@ import {
 import {
   addCartItem,
   getCartItemSubtotal,
+  getCartItemsForUniversity,
   getCartTotalQuantity,
   removeCartItem,
   updateCartQuantity,
@@ -45,7 +46,11 @@ import {
   SIZE_SURCHARGE_THB
 } from "@/lib/size-pricing";
 
-type Step = "select" | "shop" | "cart" | "checkout" | "payment" | "review" | "success";
+/**
+ * In-page checkout steps. Picking a university is no longer a step — it is a
+ * route (`/` → `/shop/<slug>`), so the storefront always starts at "shop".
+ */
+type Step = "shop" | "cart" | "checkout" | "payment" | "review" | "success";
 
 type ProductChoice = {
   size: ShirtSize;
@@ -54,6 +59,8 @@ type ProductChoice = {
 
 type StorefrontAppProps = {
   initialProducts: Product[];
+  /** Resolved from the `/shop/[university]` route param by the server. */
+  university: University;
   catalogError?: string;
   initialStep?: Step;
 };
@@ -74,7 +81,7 @@ const defaultCheckout: CheckoutDetails = {
   shippingAddress: ""
 };
 
-const stepLabels: Record<Step, string> = {
+const stepLabels: Record<Step | "select", string> = {
   select: "University",
   shop: "Shop",
   cart: "Cart",
@@ -84,35 +91,44 @@ const stepLabels: Record<Step, string> = {
   success: "Done"
 };
 
-const checkoutSteps: Step[] = [
+/**
+ * The rail still opens with "University", but that chip is a route back to
+ * `/` rather than a step this component can enter.
+ */
+const railSteps = [
   "select",
   "shop",
   "cart",
   "checkout",
   "payment",
   "review"
-];
+] as const;
+
+type RailStep = (typeof railSteps)[number];
 
 export function StorefrontApp({
   initialProducts,
+  university,
   catalogError = "",
   initialStep
 }: StorefrontAppProps) {
-  // Cart and campus live in the shared provider so a trip to a product
-  // detail route does not discard them. All pricing rules are unchanged.
+  // Cart and campus live in the shared provider, which sits above the router
+  // in the root layout, so routing between `/`, `/shop/<slug>` and
+  // `/products/<id>` never discards the cart. Pricing rules are unchanged.
   const {
-    items: cartItems,
+    items: storedCartItems,
     setItems: setCartItems,
-    universityId: selectedUniversityId,
-    setUniversityId: setSelectedUniversityId
+    universityId: storedUniversityId,
+    setUniversityId: setStoredUniversityId
   } = useCart();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const stepParam = searchParams?.get("step");
 
-  const [step, setStep] = useState<Step>(() => {
-    if (initialStep) return initialStep;
-    return "select";
-  });
+  const universityId = university.id;
+  const shopPath = getShopPath(university);
+
+  const [step, setStep] = useState<Step>(() => initialStep ?? "shop");
   const [choices, setChoices] = useState<Record<string, ProductChoice>>(() =>
     Object.fromEntries(
       initialProducts.map((product) => [
@@ -124,7 +140,7 @@ export function StorefrontApp({
       ])
     )
   );
-  const [checkout, setCheckout] =
+  const [checkoutDetails, setCheckout] =
     useState<CheckoutDetails>(defaultCheckout);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [slipFile, setSlipFile] = useState<File | null>(null);
@@ -140,39 +156,60 @@ export function StorefrontApp({
   const [order, setOrder] = useState<ConfirmedOrder | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const effectiveUniversityId =
-    selectedUniversityId || cartItems[0]?.universityId || null;
-  const selectedUniversity = effectiveUniversityId
-    ? getUniversityById(effectiveUniversityId)
-    : null;
-  const availableProducts = effectiveUniversityId
-    ? getProductsForUniversity(initialProducts, effectiveUniversityId)
-    : [];
+  const availableProducts = getProductsForUniversity(
+    initialProducts,
+    universityId
+  );
+
+  // Only Bangmod offers pickup. The method is derived rather than synced, so
+  // opening another campus can never leave checkout on an option that
+  // university does not support.
+  const checkout = useMemo<CheckoutDetails>(() => {
+    const allowedMethods = getAvailableDeliveryMethods(universityId);
+
+    return allowedMethods.includes(checkoutDetails.deliveryMethod)
+      ? checkoutDetails
+      : { ...checkoutDetails, deliveryMethod: allowedMethods[0] };
+  }, [checkoutDetails, universityId]);
+
+  // The URL is the single source of truth for which campus is open. A cart is
+  // per-campus, so anything left over from another shop is dropped rather than
+  // priced against this one - the same rule the old select step enforced.
+  const cartItems = useMemo(
+    () => getCartItemsForUniversity(storedCartItems, universityId),
+    [storedCartItems, universityId]
+  );
+  const hasForeignCartItems = cartItems.length !== storedCartItems.length;
+
+  // Point the shared cart at the campus this route is for. Navigating within
+  // the same campus (or out to a product page and back) is a no-op here, so
+  // ordinary navigation never resets the cart.
+  useEffect(() => {
+    if (storedUniversityId !== universityId) {
+      setStoredUniversityId(universityId);
+    }
+  }, [universityId, storedUniversityId, setStoredUniversityId]);
 
   useEffect(() => {
-    if (effectiveUniversityId && !selectedUniversityId) {
-      setSelectedUniversityId(effectiveUniversityId);
+    if (hasForeignCartItems) {
+      setCartItems((current) =>
+        getCartItemsForUniversity(current, universityId)
+      );
     }
-  }, [effectiveUniversityId, selectedUniversityId, setSelectedUniversityId]);
+  }, [hasForeignCartItems, universityId, setCartItems]);
 
+  // `?step=cart` is the hand-off from the product detail page. Consume it and
+  // strip it, so the shop URL stays clean and shareable.
   useEffect(() => {
-    if (stepParam === "cart") {
-      startTransition(() => {
-        setStep("cart");
-      });
-    } else if (stepParam === "shop") {
-      startTransition(() => {
-        setStep("shop");
-      });
-    } else if (
-      typeof window !== "undefined" &&
-      window.location.hash === "#cart"
-    ) {
-      startTransition(() => {
-        setStep("cart");
-      });
+    if (stepParam !== "cart") {
+      return;
     }
-  }, [stepParam]);
+
+    startTransition(() => {
+      setStep("cart");
+    });
+    window.history.replaceState(null, "", shopPath);
+  }, [stepParam, shopPath]);
 
   const totals = useMemo(
     () => calculateOrderTotals(cartItems, checkout.deliveryMethod),
@@ -207,30 +244,6 @@ export function StorefrontApp({
     setSlipPreviewUrl(objectUrl);
   }
 
-  function selectUniversity(universityId: UniversityId) {
-    if (selectedUniversityId && selectedUniversityId !== universityId) {
-      setCartItems([]);
-      setSlip(null);
-      setOrder(null);
-      setSubmissionError("");
-      setSubmissionKey(createSubmissionKey());
-    }
-
-    const allowedMethods = getAvailableDeliveryMethods(universityId);
-    if (!allowedMethods.includes(checkout.deliveryMethod)) {
-      setCheckout((current) => ({
-        ...current,
-        deliveryMethod: allowedMethods[0]
-      }));
-    }
-
-    setSelectedUniversityId(universityId);
-    setStep("shop");
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `#shop-${universityId}`);
-    }
-  }
-
   function updateChoice(productId: string, nextChoice: Partial<ProductChoice>) {
     setChoices((current) => ({
       ...current,
@@ -242,10 +255,6 @@ export function StorefrontApp({
   }
 
   function addProduct(product: Product) {
-    if (!effectiveUniversityId) {
-      return;
-    }
-
     const choice = choices[product.id] ?? {
       size: product.availableSizes[0] ?? "M",
       quantity: 1
@@ -258,7 +267,7 @@ export function StorefrontApp({
     setCartItems((current) =>
       addCartItem(current, {
         product,
-        universityId: effectiveUniversityId,
+        universityId,
         size: selectedSize,
         quantity: choice.quantity
       })
@@ -276,12 +285,9 @@ export function StorefrontApp({
       nextErrors.phone = "Phone number is required.";
     }
 
-    if (
-      selectedUniversityId &&
-      !isDeliveryMethodAllowed(selectedUniversityId, checkout.deliveryMethod)
-    ) {
+    if (!isDeliveryMethodAllowed(universityId, checkout.deliveryMethod)) {
       nextErrors.deliveryMethod =
-        selectedUniversityId === "bangmod"
+        universityId === "bangmod"
           ? "Select pickup or shipping."
           : "Delivery is the only available option for this university.";
     }
@@ -307,7 +313,7 @@ export function StorefrontApp({
   }
 
   function navigateStep(nextStep: Step) {
-    if (!canOpenStep(nextStep, cartItems, selectedUniversityId, checkout, slipFile)) {
+    if (!canOpenStep(nextStep, cartItems, checkout, slipFile)) {
       if (nextStep === "payment" && !validateCheckout()) {
         focusFirstInvalidField();
       }
@@ -350,7 +356,7 @@ export function StorefrontApp({
   }
 
   async function confirmOrder() {
-    if (!effectiveUniversityId || !slipFile || cartItems.length === 0 || isSubmitting) {
+    if (!slipFile || cartItems.length === 0 || isSubmitting) {
       return;
     }
 
@@ -361,7 +367,7 @@ export function StorefrontApp({
 
     try {
       const orderPayload = {
-        universityId: effectiveUniversityId,
+        universityId,
         checkout,
         slipSelected: true,
         submissionKey,
@@ -426,7 +432,7 @@ export function StorefrontApp({
     setSlipSavedFromBytes(0);
     setSubmissionError("");
     setSubmissionKey(createSubmissionKey());
-    setStep(selectedUniversityId ? "shop" : "select");
+    setStep("shop");
   }
 
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
@@ -435,19 +441,13 @@ export function StorefrontApp({
     <main className="app-shell">
       <header className="site-header">
         <div className="header-left">
-          <button
-            className="wordmark"
-            type="button"
-            onClick={() => setStep("select")}
-          >
+          <Link className="wordmark" href="/">
             Tripleo.bkk
-          </button>
-          {selectedUniversity ? (
-            <span className="uni-tag" title={selectedUniversity.fullName}>
-              <span className="uni-dot" aria-hidden="true" />
-              {selectedUniversity.brand}
-            </span>
-          ) : null}
+          </Link>
+          <span className="uni-tag" title={university.fullName}>
+            <span className="uni-dot" aria-hidden="true" />
+            {university.brand}
+          </span>
         </div>
 
         <div className="header-right">
@@ -459,7 +459,6 @@ export function StorefrontApp({
               className="cart-btn"
               type="button"
               onClick={() => setStep(cartItems.length > 0 ? "cart" : "shop")}
-              disabled={!effectiveUniversityId}
               aria-label={
                 cartCount === 1 ? "Cart, 1 item" : `Cart, ${cartCount} items`
               }
@@ -475,106 +474,93 @@ export function StorefrontApp({
         </div>
       </header>
 
-      {step === "select" || !selectedUniversity ? (
-        <UniversitySection onSelect={selectUniversity} />
-      ) : (
-        <div className="content-container">
-          {selectedUniversity && step !== "success" ? (
-            <StepProgress
-              step={step}
-              cartItems={cartItems}
-              universityId={effectiveUniversityId}
-              checkout={checkout}
-              slipFile={slipFile}
-              onNavigate={navigateStep}
-            />
-          ) : null}
+      <div className="content-container">
+        {step !== "success" ? (
+          <StepProgress
+            step={step}
+            cartItems={cartItems}
+            checkout={checkout}
+            slipFile={slipFile}
+            onNavigate={navigateStep}
+            onLeaveShop={() => router.push("/")}
+          />
+        ) : null}
 
-          {step === "shop" && selectedUniversity ? (
-            <ShopSection
-              catalogError={catalogError}
-              products={availableProducts}
-              university={selectedUniversity}
-              choices={choices}
-              onChoiceChange={updateChoice}
-              onAddProduct={addProduct}
-            />
-          ) : null}
+        {step === "shop" ? (
+          <ShopSection
+            catalogError={catalogError}
+            products={availableProducts}
+            university={university}
+            choices={choices}
+            onChoiceChange={updateChoice}
+            onAddProduct={addProduct}
+          />
+        ) : null}
 
-          {step === "cart" && selectedUniversity ? (
-            <CartSection
-              items={cartItems}
-              university={selectedUniversity}
-              onQuantityChange={(lineId, quantity) =>
-                setCartItems((current) =>
-                  updateCartQuantity(current, lineId, quantity)
-                )
-              }
-              onRemove={(lineId) =>
-                setCartItems((current) => removeCartItem(current, lineId))
-              }
-              onContinue={() => setStep("checkout")}
-              onShop={() => {
-                setStep("shop");
-                if (typeof window !== "undefined" && window.location.search) {
-                  window.history.replaceState(
-                    null,
-                    "",
-                    effectiveUniversityId ? `#shop-${effectiveUniversityId}` : "/"
-                  );
-                }
-              }}
-            />
-          ) : null}
+        {step === "cart" ? (
+          <CartSection
+            items={cartItems}
+            university={university}
+            onQuantityChange={(lineId, quantity) =>
+              setCartItems((current) =>
+                updateCartQuantity(current, lineId, quantity)
+              )
+            }
+            onRemove={(lineId) =>
+              setCartItems((current) => removeCartItem(current, lineId))
+            }
+            onContinue={() => setStep("checkout")}
+            onShop={() => setStep("shop")}
+          />
+        ) : null}
 
-          {step === "checkout" && selectedUniversity ? (
-            <CheckoutSection
-              checkout={checkout}
-              errors={formErrors}
-              items={cartItems}
-              totals={totals}
-              university={selectedUniversity}
-              onChange={setCheckout}
-              onContinue={continueToPayment}
-            />
-          ) : null}
+        {step === "checkout" ? (
+          <CheckoutSection
+            checkout={checkout}
+            errors={formErrors}
+            items={cartItems}
+            totals={totals}
+            university={university}
+            onChange={setCheckout}
+            onContinue={continueToPayment}
+          />
+        ) : null}
 
-          {step === "payment" && selectedUniversity ? (
-            <PaymentSection
-              finalTotalThb={totals.finalTotalThb}
-              slipFile={slipFile}
-              slipPreviewUrl={slipPreviewUrl}
-              slipError={slipError}
-              slipOptimizing={slipOptimizing}
-              slipSavedFromBytes={slipSavedFromBytes}
-              onSlipChange={selectSlip}
-              onBack={() => setStep("checkout")}
-              onContinue={() => slipFile && setStep("review")}
-            />
-          ) : null}
+        {step === "payment" ? (
+          <PaymentSection
+            finalTotalThb={totals.finalTotalThb}
+            slipFile={slipFile}
+            slipPreviewUrl={slipPreviewUrl}
+            slipError={slipError}
+            slipOptimizing={slipOptimizing}
+            slipSavedFromBytes={slipSavedFromBytes}
+            onSlipChange={selectSlip}
+            onBack={() => setStep("checkout")}
+            onContinue={() => slipFile && setStep("review")}
+          />
+        ) : null}
 
-          {step === "review" && selectedUniversity ? (
-            <ReviewSection
-              checkout={checkout}
-              isSubmitting={isSubmitting}
-              items={cartItems}
-              submissionError={submissionError}
-              slipFile={slipFile}
-              slipPreviewUrl={slipPreviewUrl}
-              submitStage={submitStage}
-              uploadPercent={uploadPercent}
-              totals={totals}
-              university={selectedUniversity}
-              onBack={() => setStep("payment")}
-              onConfirm={confirmOrder}
-            />
-          ) : null}
+        {step === "review" ? (
+          <ReviewSection
+            checkout={checkout}
+            isSubmitting={isSubmitting}
+            items={cartItems}
+            submissionError={submissionError}
+            slipFile={slipFile}
+            slipPreviewUrl={slipPreviewUrl}
+            submitStage={submitStage}
+            uploadPercent={uploadPercent}
+            totals={totals}
+            university={university}
+            onBack={() => setStep("payment")}
+            onConfirm={confirmOrder}
+          />
+        ) : null}
 
-          {step === "success" && order ? (
-            <SuccessSection order={order} onReset={resetOrder} />
-          ) : null}
-        </div>
-      )}
+        {step === "success" && order ? (
+          <SuccessSection order={order} onReset={resetOrder} />
+        ) : null}
+      </div>
 
       <footer className="site-footer">
         <span className="site-footer-brand">Tripleo.bkk</span>
@@ -587,83 +573,25 @@ export function StorefrontApp({
 }
 
 /* ════════════════════════════════════════════════════════════════
-   University selection
-   ════════════════════════════════════════════════════════════════ */
-function UniversitySection({
-  onSelect
-}: {
-  onSelect: (universityId: UniversityId) => void;
-}) {
-  return (
-    <section className="landing" id="universities">
-      <div className="landing-inner">
-        <div className="landing-head">
-          <p className="eyebrow">Tripleo.bkk</p>
-          <h1 className="display-xl">
-            Select your
-            <br />
-            <span className="serif-accent">university</span>
-          </h1>
-          <p className="lede">
-            Limited shirt drops for eight Thai universities. Choose your
-            university to see what&apos;s in stock.
-          </p>
-        </div>
-
-        <div className="landing-rule" />
-        <p className="eyebrow" id="university-list-label">
-          {universities.length} university collections
-        </p>
-
-        <div
-          className="uni-list"
-          role="group"
-          aria-labelledby="university-list-label"
-        >
-          {universities.map((university) => (
-            <button
-              className="uni-card"
-              key={university.id}
-              onClick={() => onSelect(university.id)}
-              type="button"
-              aria-label={`${university.brand} — ${university.fullName} (${university.thaiName})`}
-            >
-              <span className="uni-card-text">
-                <span className="uni-card-brand">{university.brand}</span>
-                <span className="uni-card-uni">{university.shortName}</span>
-                <span className="uni-card-thai">{university.thaiName}</span>
-              </span>
-              <span className="uni-card-go" aria-hidden="true">
-                →
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════════
    Progress rail
    ════════════════════════════════════════════════════════════════ */
 function StepProgress({
   step,
   cartItems,
-  universityId,
   checkout,
   slipFile,
-  onNavigate
+  onNavigate,
+  onLeaveShop
 }: {
   step: Step;
   cartItems: CartItem[];
-  universityId: UniversityId | null;
   checkout: CheckoutDetails;
   slipFile: File | null;
   onNavigate: (step: Step) => void;
+  onLeaveShop: () => void;
 }) {
   const railRef = useRef<HTMLDivElement>(null);
-  const currentIndex = Math.max(0, checkoutSteps.indexOf(step));
+  const currentIndex = Math.max(0, railSteps.indexOf(step as RailStep));
 
   // Keep the active chip visible without the shopper having to scroll for it.
   useEffect(() => {
@@ -676,24 +604,23 @@ function StepProgress({
   return (
     <nav className="progress" aria-label="Checkout progress">
       <div className="progress-rail" ref={railRef}>
-        {checkoutSteps.map((checkoutStep) => (
+        {railSteps.map((railStep) => (
           <button
             className="progress-step"
-            aria-current={step === checkoutStep ? "step" : undefined}
+            aria-current={step === railStep ? "step" : undefined}
             disabled={
-              !canOpenStep(
-                checkoutStep,
-                cartItems,
-                universityId,
-                checkout,
-                slipFile
-              )
+              railStep !== "select" &&
+              !canOpenStep(railStep, cartItems, checkout, slipFile)
             }
-            key={checkoutStep}
-            onClick={() => onNavigate(checkoutStep)}
+            key={railStep}
+            onClick={() =>
+              // "University" leaves the shop for the landing route; every
+              // other chip is an in-page step.
+              railStep === "select" ? onLeaveShop() : onNavigate(railStep)
+            }
             type="button"
           >
-            {stepLabels[checkoutStep]}
+            {stepLabels[railStep]}
           </button>
         ))}
       </div>
@@ -701,12 +628,12 @@ function StepProgress({
         <span
           className="progress-fill"
           style={{
-            width: `${((currentIndex + 1) / checkoutSteps.length) * 100}%`
+            width: `${((currentIndex + 1) / railSteps.length) * 100}%`
           }}
         />
       </div>
       <p className="progress-count">
-        Step {currentIndex + 1} of {checkoutSteps.length} · {stepLabels[step]}
+        Step {currentIndex + 1} of {railSteps.length} · {stepLabels[step]}
       </p>
     </nav>
   );
@@ -1990,14 +1917,9 @@ function focusFirstInvalidField() {
 function canOpenStep(
   nextStep: Step,
   items: CartItem[],
-  universityId: UniversityId | null,
   checkout?: CheckoutDetails,
   slipFile?: File | null
 ) {
-  if (!universityId) {
-    return nextStep === "select";
-  }
-
   if (nextStep === "shop" || nextStep === "cart") {
     return true;
   }

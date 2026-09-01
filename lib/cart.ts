@@ -90,6 +90,19 @@ export function removeCartItem(items: CartItem[], lineId: string) {
   return items.filter((item) => item.lineId !== lineId);
 }
 
+/**
+ * A cart belongs to exactly one campus: prices, delivery methods and the
+ * order payload are all per-university. Shop routes use this to scope the
+ * shared cart to the university in the URL, so items left over from another
+ * campus are never priced or checked out against this one.
+ */
+export function getCartItemsForUniversity(
+  items: CartItem[],
+  universityId: UniversityId
+) {
+  return items.filter((item) => item.universityId === universityId);
+}
+
 export function getCartItemSubtotal(item: CartItem) {
   return item.quantity * item.unitPriceThb;
 }

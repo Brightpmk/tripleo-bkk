@@ -30,9 +30,32 @@ export const universitySheetValues = [
 
 export type UniversitySheetValue = (typeof universitySheetValues)[number];
 
+/**
+ * URL slugs for the public shop routes (`/shop/<slug>`).
+ *
+ * These are *only* addresses. They are deliberately kept separate from the
+ * canonical values that are persisted — `sheetValue` ("BANGMOD") in the
+ * database and `brand` ("bm.swagclub") on screen — so a URL can never be
+ * mistaken for a stored value, and a slug could be changed without a data
+ * migration.
+ */
+export const universityRouteSlugs = [
+  "msu",
+  "btu",
+  "ru",
+  "mfu",
+  "mju",
+  "bm",
+  "nb",
+  "lkb"
+] as const;
+
+export type UniversityRouteSlug = (typeof universityRouteSlugs)[number];
+
 export type University = {
   id: UniversityId;
-  slug: string;
+  /** URL slug for `/shop/<routeSlug>`. Never persisted. */
+  routeSlug: UniversityRouteSlug;
   /** Canonical Google Sheets value. Persisted — do not change. */
   sheetValue: UniversitySheetValue;
   /** University sub-brand shown as the primary label, e.g. "msu.swagclub". */
@@ -68,7 +91,7 @@ export type Product = {
 export const universities: University[] = [
   {
     id: "mahasarakham",
-    slug: "mahasarakham",
+    routeSlug: "msu",
     sheetValue: "MAHASARAKHAM",
     brand: "msu.swagclub",
     shortName: "Mahasarakham",
@@ -77,7 +100,7 @@ export const universities: University[] = [
   },
   {
     id: "bangkok-thonburi",
-    slug: "bangkok-thonburi",
+    routeSlug: "btu",
     sheetValue: "BANGKOK THONBURI",
     brand: "btu.swagclub",
     shortName: "Bangkok Thonburi",
@@ -86,7 +109,7 @@ export const universities: University[] = [
   },
   {
     id: "ramkhamhaeng",
-    slug: "ramkhamhaeng",
+    routeSlug: "ru",
     sheetValue: "RAMKHAMHAENG",
     brand: "ru.swagclub",
     shortName: "Ramkhamhaeng",
@@ -95,7 +118,7 @@ export const universities: University[] = [
   },
   {
     id: "mae-fah-luang",
-    slug: "mae-fah-luang",
+    routeSlug: "mfu",
     sheetValue: "MAE FAH LUANG",
     brand: "mfu.swagclub",
     shortName: "Mae Fah Luang",
@@ -104,7 +127,7 @@ export const universities: University[] = [
   },
   {
     id: "maejo",
-    slug: "maejo",
+    routeSlug: "mju",
     sheetValue: "MAEJO",
     brand: "mju.swagclub",
     shortName: "Maejo",
@@ -113,7 +136,7 @@ export const universities: University[] = [
   },
   {
     id: "bangmod",
-    slug: "bangmod",
+    routeSlug: "bm",
     sheetValue: "BANGMOD",
     brand: "bm.swagclub",
     shortName: "Bangmod",
@@ -122,7 +145,7 @@ export const universities: University[] = [
   },
   {
     id: "north-bangkok",
-    slug: "north-bangkok",
+    routeSlug: "nb",
     sheetValue: "NORTH BANGKOK",
     brand: "nb.swagclub",
     shortName: "North Bangkok",
@@ -131,7 +154,7 @@ export const universities: University[] = [
   },
   {
     id: "ladkrabang",
-    slug: "ladkrabang",
+    routeSlug: "lkb",
     sheetValue: "LADKRABANG",
     brand: "lkb.swagclub",
     shortName: "Ladkrabang",
@@ -150,8 +173,30 @@ export function getUniversityById(id: UniversityId) {
   return universities.find((university) => university.id === id);
 }
 
-export function getUniversityBySlug(slug: string) {
-  return universities.find((university) => university.slug === slug);
+/**
+ * Resolves a `/shop/<slug>` route param. Returns undefined for anything that
+ * is not one of the eight supported slugs, so a route can 404 on the rest.
+ */
+export function getUniversityByRouteSlug(routeSlug: string) {
+  return universities.find(
+    (university) => university.routeSlug === routeSlug
+  );
+}
+
+export function isUniversityRouteSlug(
+  value: string
+): value is UniversityRouteSlug {
+  return universityRouteSlugs.includes(value as UniversityRouteSlug);
+}
+
+/** The canonical public path for a university shop. */
+export function getShopPath(university: Pick<University, "routeSlug">) {
+  return `/shop/${university.routeSlug}`;
+}
+
+export function getShopPathForUniversityId(id: UniversityId) {
+  const university = getUniversityById(id);
+  return university ? getShopPath(university) : "/";
 }
 
 export function getProductById(products: Product[], id: string) {

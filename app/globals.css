@@ -1265,6 +1265,7 @@ legend {
   color: var(--bad);
 }
 
+.state h1,
 .state h3 {
   margin: 0;
   font-size: 1.0625rem;

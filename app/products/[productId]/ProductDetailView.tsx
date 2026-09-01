@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 import { ProductGallery } from "@/components/ProductGallery";
 import { addCartItem, getCartTotalQuantity } from "@/lib/cart";
-import { getUniversityById, type Product } from "@/lib/catalog";
+import { getShopPath, getUniversityById, type Product } from "@/lib/catalog";
 import { formatThb } from "@/lib/format";
 import {
   getSizeSurchargeThb,
@@ -40,6 +40,9 @@ export function ProductDetailView({ product }: { product: Product }) {
   const hasSurchargedSize = product.availableSizes.some(hasSizeSurcharge);
   const cartCount = useMemo(() => getCartTotalQuantity(items), [items]);
   const gallery = product.images?.length ? product.images : [product.image];
+  // Real shop route for this campus, so Back and Cart both land on a URL the
+  // shopper could bookmark or share.
+  const shopPath = university ? getShopPath(university) : "/";
 
   function addToCart() {
     if (!university) {
@@ -77,7 +80,7 @@ export function ProductDetailView({ product }: { product: Product }) {
           <Link className="track-nav-btn" href="/tracking">
             Track order
           </Link>
-          <Link className="cart-btn" href="/?step=cart">
+          <Link className="cart-btn" href={`${shopPath}?step=cart`}>
             Cart
             {cartCount > 0 ? (
               <span className="cart-btn-count" aria-hidden="true">
@@ -90,10 +93,7 @@ export function ProductDetailView({ product }: { product: Product }) {
 
       <div className="content-container">
         <section className="step-section detail-section">
-          <Link
-            className="detail-back"
-            href={university ? "/?step=shop" : "/"}
-          >
+          <Link className="detail-back" href={shopPath}>
             ← Back to shop
           </Link>
 
@@ -218,7 +218,7 @@ export function ProductDetailView({ product }: { product: Product }) {
               </dl>
               <div className="action-bar-row">
                 {added ? (
-                  <Link className="btn btn-primary" href="/?step=cart">
+                  <Link className="btn btn-primary" href={`${shopPath}?step=cart`}>
                     View cart
                   </Link>
                 ) : (

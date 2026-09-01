@@ -1,60 +1,18 @@
-import { Suspense } from "react";
-import { StorefrontApp } from "@/components/StorefrontApp";
-import type { Product } from "@/lib/catalog";
-import {
-  getCachedProductCatalog,
-  ProductCatalogError
-} from "@/lib/server/product-catalog";
+import type { Metadata } from "next";
+import { UniversityLanding } from "@/components/UniversityLanding";
 
-export const dynamic = "force-dynamic";
-export const runtime = "nodejs";
+export const metadata: Metadata = {
+  title: "Tripleo.bkk — Select your university",
+  description:
+    "Premium streetwear shirts for eight Thai universities. Choose your university to open its Tripleo.bkk collection.",
+  alternates: { canonical: "/" }
+};
 
-export default async function Home(props: {
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const searchParams = props.searchParams ? await props.searchParams : {};
-  const initialStep =
-    searchParams.step === "cart"
-      ? "cart"
-      : searchParams.step === "shop"
-      ? "shop"
-      : undefined;
-
-  let products: Product[] = [];
-  let catalogError = "";
-
-  try {
-    products = await getCachedProductCatalog();
-  } catch (error) {
-    console.error("Product catalog load failed", getCatalogErrorDiagnostics(error));
-    catalogError =
-      "Product catalog is unavailable right now. Please try again in a moment.";
-  }
-
-  return (
-    <Suspense fallback={null}>
-      <StorefrontApp
-        initialProducts={products}
-        catalogError={catalogError}
-        initialStep={initialStep}
-      />
-    </Suspense>
-  );
-}
-
-function getCatalogErrorDiagnostics(error: unknown) {
-  const errorName = error instanceof Error ? error.name : "UnknownError";
-
-  if (error instanceof ProductCatalogError) {
-    return { errorName, message: error.message };
-  }
-
-  if (
-    error instanceof Error &&
-    error.message.startsWith("Missing required server environment variables:")
-  ) {
-    return { errorName, message: error.message };
-  }
-
-  return { errorName };
+/**
+ * `/` is now the university selection landing page only. Each card links to
+ * a real `/shop/<slug>` route — no catalog data is needed here, so the page
+ * stays static and instant.
+ */
+export default function Home() {
+  return <UniversityLanding />;
 }
