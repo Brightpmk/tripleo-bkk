@@ -9,7 +9,7 @@ import {
 import type { ProductImageRow } from "@/lib/server/supabase/product-image-repository";
 import { deleteAdminProductWithImageCleanup } from "@/lib/server/product-admin-operations";
 import type { AdminProduct } from "@/lib/admin-products";
-import { POST as postImages, DELETE as deleteImage, PATCH as patchImages } from "@/app/api/admin/products/[productId]/images/route";
+import { GET as getImages, POST as postImages, DELETE as deleteImage, PATCH as patchImages } from "@/app/api/admin/products/[productId]/images/route";
 
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/server/admin-auth", () => ({
@@ -402,6 +402,14 @@ describe("image endpoint security", () => {
       }
     );
   }
+
+  it("rejects unauthenticated gallery reads", async () => {
+    const unauthenticatedGet = new Request(
+      `https://shop.example/api/admin/products/${PRODUCT_ID}/images`,
+      { method: "GET" }
+    );
+    expect((await getImages(unauthenticatedGet, params)).status).toBe(401);
+  });
 
   it("rejects unauthenticated uploads", async () => {
     expect((await postImages(request("POST"), params)).status).toBe(401);

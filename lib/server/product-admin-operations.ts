@@ -16,7 +16,10 @@ import {
   type ProductImageCleanupStatus
 } from "./product-image";
 import { invalidateProductCatalogCache } from "./product-catalog";
-import { listProductImageUrls } from "./supabase/product-image-repository";
+import {
+  addProductImage,
+  listProductImageUrls
+} from "./supabase/product-image-repository";
 
 export type ProductOperationDependencies = {
   listProducts: typeof listAdminProducts;
@@ -27,6 +30,7 @@ export type ProductOperationDependencies = {
   uploadImage: typeof uploadProductImage;
   deleteImage: typeof deleteProductImageBestEffort;
   invalidateCatalog: typeof invalidateProductCatalogCache;
+  addImage?: (productId: string, imageUrl: string) => Promise<void>;
 };
 
 const defaultDependencies: ProductOperationDependencies = {
@@ -37,15 +41,22 @@ const defaultDependencies: ProductOperationDependencies = {
   listImageUrls: listProductImageUrls,
   uploadImage: uploadProductImage,
   deleteImage: deleteProductImageBestEffort,
-  invalidateCatalog: invalidateProductCatalogCache
+  invalidateCatalog: invalidateProductCatalogCache,
+  addImage: addProductImage
 };
 
 export async function createAdminProductWithImage(
   raw: RawProductInput,
-  image: File | null,
+  imageOrImages: File | File[] | null,
   dependencies: ProductOperationDependencies = defaultDependencies
 ) {
-  if (!image) {
+  const images = Array.isArray(imageOrImages)
+    ? imageOrImages.filter((f): f is File => f instanceof File && f.size > 0)
+    : imageOrImages
+    ? [imageOrImages]
+    : [];
+
+  if (images.length === 0) {
     throw new ProductAdminError("Upload a product image.", 400, {
       image: "Upload a product image."
     });
@@ -60,19 +71,44 @@ export async function createAdminProductWithImage(
     });
   }
 
-  const imageUrl = await dependencies.uploadImage(validated.productId, image);
-
-  let created;
+  const primaryImage = images[0];
+  const uploadedUrls: string[] = [];
 
   try {
-    created = await dependencies.createProduct({ ...validated, imageUrl });
+    const primaryImageUrl = await dependencies.uploadImage(validated.productId, primaryImage);
+    uploadedUrls.push(primaryImageUrl);
+
+    const created = await dependencies.createProduct({ ...validated, imageUrl: primaryImageUrl });
+
+    if (dependencies.addImage) {
+      await dependencies.addImage(validated.productId, primaryImageUrl);
+    }
+
+    for (let i = 1; i < images.length; i++) {
+      const extraFile = images[i];
+      try {
+        const extraUrl = await dependencies.uploadImage(validated.productId, extraFile);
+        uploadedUrls.push(extraUrl);
+        if (dependencies.addImage) {
+          await dependencies.addImage(validated.productId, extraUrl);
+        }
+      } catch (err) {
+        console.error("Failed to upload additional image during product creation", {
+          productId: validated.productId,
+          fileName: extraFile.name,
+          err
+        });
+      }
+    }
+
+    invalidateCatalogSafely(dependencies.invalidateCatalog);
+    return created;
   } catch (error) {
-    await dependencies.deleteImage(imageUrl);
+    for (const url of uploadedUrls) {
+      await dependencies.deleteImage(url);
+    }
     throw error;
   }
-
-  invalidateCatalogSafely(dependencies.invalidateCatalog);
-  return created;
 }
 
 export async function updateAdminProductWithOptionalImage(

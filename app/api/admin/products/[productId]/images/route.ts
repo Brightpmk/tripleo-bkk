@@ -20,7 +20,7 @@ async function guard(request: Request) {
     );
   }
 
-  if (!isSameOriginRequest(request)) {
+  if (request.method !== "GET" && !isSameOriginRequest(request)) {
     return Response.json(
       { ok: false, message: "Request could not be verified." },
       { status: 403 }

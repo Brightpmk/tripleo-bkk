@@ -14,15 +14,29 @@ const attempts = new Map<string, Attempt>();
 export function isSameOriginRequest(request: Request) {
   const origin = request.headers.get("origin");
 
-  if (!origin) {
-    return false;
+  if (origin) {
+    try {
+      return new URL(origin).origin === new URL(request.url).origin;
+    } catch {
+      return false;
+    }
   }
 
-  try {
-    return new URL(origin).origin === new URL(request.url).origin;
-  } catch {
-    return false;
+  const referer = request.headers.get("referer");
+  if (referer) {
+    try {
+      return new URL(referer).origin === new URL(request.url).origin;
+    } catch {
+      return false;
+    }
   }
+
+  const secFetchSite = request.headers.get("sec-fetch-site");
+  if (secFetchSite === "same-origin") {
+    return true;
+  }
+
+  return false;
 }
 
 export function getLoginSource(request: Request) {

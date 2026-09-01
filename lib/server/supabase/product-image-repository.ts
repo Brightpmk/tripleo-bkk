@@ -46,7 +46,38 @@ export async function listProductImages(
     throw imageWriteError(error, "Product images could not be loaded.");
   }
 
-  return ((data ?? []) as RawProductImageRow[]).map(toProductImage);
+  const rows = ((data ?? []) as RawProductImageRow[]).map(toProductImage);
+
+  // If product_images has no rows, but the product row has a cover image,
+  // backfill it so it appears in the gallery!
+  if (rows.length === 0) {
+    const { data: productData } = await supabase
+      .from("products")
+      .select("image_url")
+      .eq("product_id", productId)
+      .maybeSingle();
+
+    if (productData?.image_url && productData.image_url.trim().length > 0) {
+      const coverUrl = productData.image_url.trim();
+      const { data: inserted, error: insertError } = await supabase
+        .from("product_images")
+        .insert({
+          product_id: productId,
+          image_url: coverUrl,
+          sort_order: 1
+        })
+        .select(imageColumns)
+        .maybeSingle();
+
+      if (!insertError && inserted) {
+        return [toProductImage(inserted as RawProductImageRow)];
+      }
+
+      return [{ id: "cover", productId, imageUrl: coverUrl, sortOrder: 1 }];
+    }
+  }
+
+  return rows;
 }
 
 /**
@@ -93,6 +124,10 @@ export async function listProductImagesFor(
 export async function addProductImage(productId: string, imageUrl: string) {
   const supabase = getSupabaseServiceClient();
   const existing = await listProductImages(productId);
+  if (existing.some((img) => img.imageUrl === imageUrl)) {
+    return;
+  }
+
   const nextSortOrder =
     existing.reduce((max, image) => Math.max(max, image.sortOrder), 0) + 1;
 

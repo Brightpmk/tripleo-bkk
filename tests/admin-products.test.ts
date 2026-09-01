@@ -83,6 +83,40 @@ describe("admin product operations", () => {
     expect(invalidateCatalog).toHaveBeenCalledTimes(1);
   });
 
+  it("creates a product with multiple images and attaches them to gallery", async () => {
+    const createProduct = vi.fn(async (product: Record<string, unknown>) =>
+      product as unknown as AdminProduct
+    );
+    const addImage = vi.fn(async () => undefined);
+    const invalidateCatalog = vi.fn();
+    const images = [
+      new File([pngBytes()], "img1.png", { type: "image/png" }),
+      new File([pngBytes()], "img2.png", { type: "image/png" })
+    ];
+
+    let uploadCount = 0;
+    const uploadImage = vi.fn(async () => {
+      uploadCount += 1;
+      return `https://store.public.blob.vercel-storage.com/products/img${uploadCount}.png`;
+    });
+
+    const created = await createAdminProductWithImage(validProduct, images, {
+      listProducts: vi.fn(async () => []),
+      createProduct,
+      updateProduct: vi.fn(),
+      deleteProduct: vi.fn(),
+      listImageUrls: vi.fn(async () => []),
+      uploadImage,
+      deleteImage: vi.fn(),
+      invalidateCatalog,
+      addImage
+    });
+
+    expect(created.imageUrl).toBe("https://store.public.blob.vercel-storage.com/products/img1.png");
+    expect(uploadImage).toHaveBeenCalledTimes(2);
+    expect(addImage).toHaveBeenCalledTimes(2);
+  });
+
   it("rejects duplicate PRODUCT_ID before uploading", async () => {
     const uploadImage = vi.fn();
 

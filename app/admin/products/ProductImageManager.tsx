@@ -65,9 +65,9 @@ export function ProductImageManager({ productId }: { productId: string }) {
           setImages(loaded);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (!ignore) {
-          setMessage("Product images could not be loaded.");
+          setMessage(error instanceof Error ? error.message : "Product images could not be loaded.");
         }
       })
       .finally(() => {

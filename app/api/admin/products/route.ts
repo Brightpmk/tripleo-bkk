@@ -38,10 +38,20 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const product = parseProductPayload(formData.get("product"));
-    const image = formData.get("image");
+    const singleImage = formData.get("image");
+    const multipleImages = formData
+      .getAll("images")
+      .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+    const filesToUpload =
+      multipleImages.length > 0
+        ? multipleImages
+        : singleImage instanceof File && singleImage.size > 0
+        ? [singleImage]
+        : [];
+
     const saved = await createAdminProductWithImage(
       product,
-      image instanceof File ? image : null
+      filesToUpload
     );
 
     return Response.json({ ok: true, product: saved }, { status: 201 });

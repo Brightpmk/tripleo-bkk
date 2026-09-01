@@ -298,6 +298,13 @@ function ProductEditor({
   const [image, setImage] = useState<File | null>(null);
   const [imageNotice, setImageNotice] = useState("");
   const [optimizingImage, setOptimizingImage] = useState(false);
+
+  // Multi-image state for product creation
+  const [createdImages, setCreatedImages] = useState<File[]>([]);
+  const [createdPreviews, setCreatedPreviews] = useState<string[]>([]);
+  const [optimizingCreatedImages, setOptimizingCreatedImages] = useState(false);
+  const [createdImageNotice, setCreatedImageNotice] = useState("");
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -305,6 +312,15 @@ function ProductEditor({
   const [deleting, setDeleting] = useState(false);
   const dialogRef = useRef<HTMLElement>(null);
   const busy = saving || deleting;
+
+  useEffect(() => {
+    const urls = createdImages.map((file) => URL.createObjectURL(file));
+    setCreatedPreviews(urls);
+
+    return () => {
+      urls.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, [createdImages]);
 
   // Lock the page behind the drawer and move focus into it — once.
   useEffect(() => {
@@ -414,15 +430,74 @@ function ProductEditor({
     }
   }
 
+  async function selectCreatedImages(fileList: FileList | null) {
+    if (!fileList || fileList.length === 0) return;
+
+    setOptimizingCreatedImages(true);
+    setCreatedImageNotice("");
+    setErrors((current) => ({ ...current, image: "", imageUrl: "" }));
+
+    try {
+      const files = Array.from(fileList);
+      const optimized: File[] = [];
+
+      for (const file of files) {
+        const result = await optimizeProductImage(file, MAX_PRODUCT_IMAGE_BYTES);
+        if (result.ok) {
+          optimized.push(result.file);
+        } else {
+          setErrors((current) => ({ ...current, image: result.message }));
+        }
+      }
+
+      if (optimized.length > 0) {
+        setCreatedImages((current) => [...current, ...optimized]);
+        setCreatedImageNotice(
+          `Added ${optimized.length} image${optimized.length > 1 ? "s" : ""}.`
+        );
+      }
+    } finally {
+      setOptimizingCreatedImages(false);
+    }
+  }
+
+  function moveCreatedImage(index: number, direction: -1 | 1) {
+    const target = index + direction;
+    if (target < 0 || target >= createdImages.length) return;
+
+    setCreatedImages((current) => {
+      const copy = [...current];
+      const [item] = copy.splice(index, 1);
+      copy.splice(target, 0, item);
+      return copy;
+    });
+  }
+
+  function removeCreatedImage(index: number) {
+    setCreatedImages((current) => current.filter((_, i) => i !== index));
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setErrors({});
     setMessage("");
 
+    if (created && createdImages.length === 0) {
+      setErrors({ image: "Choose at least one image for this product." });
+      setSaving(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.set("product", JSON.stringify(draft));
-    if (image) formData.set("image", image);
+
+    if (created) {
+      formData.set("image", createdImages[0]);
+      createdImages.forEach((img) => formData.append("images", img));
+    } else {
+      if (image) formData.set("image", image);
+    }
 
     try {
       const endpoint = created
@@ -582,35 +657,131 @@ function ProductEditor({
               ) : null}
             </fieldset>
 
-            <Field
-              label={created ? "Product image" : "Replace image (optional)"}
-              error={errors.imageUrl || errors.image}
-              hint={`PNG, JPEG, or WEBP. Up to ${formatBytes(MAX_PRODUCT_IMAGE_SOURCE_BYTES)} — large photos are optimised automatically.`}
-            >
-              <input
-                type="file"
-                accept={acceptedProductImageTypes.join(",")}
-                required={created && !image}
-                disabled={optimizingImage || busy}
-                onChange={(event) =>
-                  selectImage(event.target.files?.[0] ?? null)
-                }
-              />
-              {optimizingImage ? (
-                <small className="admin-image-status" role="status">
-                  Optimising image…
-                </small>
-              ) : imageNotice ? (
-                <small className="admin-image-status" role="status">
-                  {imageNotice}
-                </small>
-              ) : null}
-            </Field>
-
             {created ? (
-              <p className="admin-images-hint">
-                Save the product first, then add gallery images.
-              </p>
+              <section
+                className="admin-images"
+                aria-labelledby="admin-images-create-title"
+              >
+                <div className="admin-images-head">
+                  <h3 className="admin-panel-title" id="admin-images-create-title">
+                    Product images
+                  </h3>
+                  <span className="admin-images-count">
+                    {createdImages.length} image
+                    {createdImages.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+
+                <label className="admin-images-upload">
+                  <span className="admin-button admin-button-secondary">
+                    {optimizingCreatedImages
+                      ? "Optimising images…"
+                      : "Add product images"}
+                  </span>
+                  <input
+                    type="file"
+                    multiple
+                    accept={acceptedProductImageTypes.join(",")}
+                    disabled={optimizingCreatedImages || busy}
+                    onChange={(event) => {
+                      selectCreatedImages(event.target.files);
+                      event.target.value = "";
+                    }}
+                  />
+                  <small>
+                    Choose one or more PNG, JPEG, or WEBP images. Large photos are
+                    optimised automatically. The first image will be the primary
+                    cover on the storefront.
+                  </small>
+                </label>
+
+                {errors.image || errors.imageUrl ? (
+                  <small className="admin-field-error">
+                    {errors.image || errors.imageUrl}
+                  </small>
+                ) : null}
+
+                {createdImageNotice ? (
+                  <small className="admin-image-status" role="status">
+                    {createdImageNotice}
+                  </small>
+                ) : null}
+
+                {createdImages.length === 0 ? (
+                  <p className="admin-images-empty">
+                    No images selected yet. Please add at least one image for this
+                    product.
+                  </p>
+                ) : (
+                  <ol className="admin-image-list">
+                    {createdImages.map((file, index) => (
+                      <li
+                        className="admin-image-row"
+                        key={`${file.name}-${index}`}
+                      >
+                        <span className="admin-image-index">{index + 1}</span>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          className="admin-image-thumb"
+                          src={createdPreviews[index] || ""}
+                          alt={`Selected image ${index + 1}`}
+                        />
+                        <div className="admin-image-meta">
+                          {index === 0 ? (
+                            <span className="admin-image-primary">
+                              Primary image
+                            </span>
+                          ) : (
+                            <span className="admin-image-position">
+                              Position {index + 1}
+                            </span>
+                          )}
+                          <div
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--ink-3)",
+                              marginTop: "2px"
+                            }}
+                          >
+                            {file.name} ({formatBytes(file.size)})
+                          </div>
+                        </div>
+                        <div className="admin-image-actions">
+                          <button
+                            type="button"
+                            className="admin-image-btn"
+                            disabled={index === 0 || busy}
+                            onClick={() => moveCreatedImage(index, -1)}
+                            aria-label={`Move image ${index + 1} earlier`}
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-image-btn"
+                            disabled={
+                              index === createdImages.length - 1 || busy
+                            }
+                            onClick={() => moveCreatedImage(index, 1)}
+                            aria-label={`Move image ${index + 1} later`}
+                          >
+                            ↓
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-image-btn is-danger"
+                            disabled={busy}
+                            onClick={() => removeCreatedImage(index)}
+                            aria-label={`Remove image ${index + 1}`}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </section>
             ) : (
               <ProductImageManager productId={product.productId} />
             )}
