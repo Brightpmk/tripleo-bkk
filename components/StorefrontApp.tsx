@@ -1670,7 +1670,6 @@ function SuccessSection({
         <h2 className="display-lg">Order <span className="serif-accent">Placed</span></h2>
         <p className="lede">
           สั่งซื้อสำเร็จ เราได้รับคำสั่งซื้อของคุณแล้ว
-          กรุณาเก็บหมายเลขนี้ไว้สำหรับติดตามคำสั่งซื้อ
         </p>
 
         <p className="order-id-label">หมายเลขคำสั่งซื้อ</p>
