@@ -331,7 +331,7 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
             </p>
             <button
               type="button"
-              className="admin-delete-link admin-danger-trigger"
+              className="admin-danger-trigger"
               onClick={() => setConfirmingDelete(true)}
               disabled={saveState === "saving"}
             >
@@ -362,9 +362,10 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
 }
 
 /**
- * Irreversible, so it asks for the ORDER_ID to be typed out. That single
- * extra step makes deleting the wrong order essentially impossible while
- * staying usable on a phone.
+ * Two-step confirmation flow for permanent order deletion:
+ * 1. Shows order details (ID, Customer, Total) with Cancel and Continue.
+ * 2. Asks for final confirmation with Cancel and Delete Order.
+ * Deletion request is only sent upon clicking the final Delete Order button.
  */
 function DeleteOrderConfirmation({
   order,
@@ -375,11 +376,9 @@ function DeleteOrderConfirmation({
   onCancel: () => void;
   onDeleted: (warning: string) => void;
 }) {
-  const [typed, setTyped] = useState("");
+  const [step, setStep] = useState<1 | 2>(1);
   const [deleting, setDeleting] = useState(false);
   const [message, setMessage] = useState("");
-
-  const confirmed = typed.trim().toUpperCase() === order.orderId.toUpperCase();
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -399,7 +398,7 @@ function DeleteOrderConfirmation({
   }, [deleting, onCancel]);
 
   async function deleteOrder() {
-    if (!confirmed || deleting) {
+    if (deleting) {
       return;
     }
 
@@ -447,73 +446,103 @@ function DeleteOrderConfirmation({
         aria-labelledby="delete-order-title"
         aria-describedby="delete-order-copy"
       >
-        <h2 id="delete-order-title">Delete order {order.orderId}?</h2>
-        <p id="delete-order-copy">
-          This permanently deletes the order and all associated order items.
-          This action cannot be undone.
-        </p>
+        {step === 1 ? (
+          <>
+            <h2 id="delete-order-title">Delete this order?</h2>
+            <p id="delete-order-copy">
+              This permanently removes the order and all associated order items.
+              <br />
+              This action cannot be undone.
+            </p>
 
-        <dl className="admin-confirm-facts">
-          <div>
-            <dt>Order ID</dt>
-            <dd>{order.orderId}</dd>
-          </div>
-          <div>
-            <dt>Customer</dt>
-            <dd>{order.customerName || "—"}</dd>
-          </div>
-          <div>
-            <dt>Total</dt>
-            <dd>{formatThb(order.totalThb)}</dd>
-          </div>
-          <div>
-            <dt>Placed</dt>
-            <dd>{formatBangkokDateTime(order.createdAtIso)}</dd>
-          </div>
-        </dl>
+            <dl className="admin-confirm-facts">
+              <div>
+                <dt>Order ID</dt>
+                <dd>{order.orderId}</dd>
+              </div>
+              <div>
+                <dt>Customer</dt>
+                <dd>{order.customerName || "—"}</dd>
+              </div>
+              <div>
+                <dt>Total</dt>
+                <dd>{formatThb(order.totalThb)}</dd>
+              </div>
+              <div>
+                <dt>Placed</dt>
+                <dd>{formatBangkokDateTime(order.createdAtIso)}</dd>
+              </div>
+            </dl>
 
-        <label className="admin-field admin-confirm-field">
-          <span>Type {order.orderId} to confirm</span>
-          <input
-            value={typed}
-            onChange={(event) => setTyped(event.target.value)}
-            autoCapitalize="characters"
-            autoCorrect="off"
-            spellCheck={false}
-            disabled={deleting}
-            aria-label={`Type ${order.orderId} to confirm deletion`}
-          />
-        </label>
+            <p className="admin-confirm-note">
+              To keep this order but stop fulfilment, set its status to Cancelled
+              instead.
+            </p>
 
-        <p className="admin-confirm-note">
-          To keep this order but stop fulfilment, set its status to Cancelled
-          instead.
-        </p>
+            <div className="admin-confirm-actions">
+              <button
+                type="button"
+                className="admin-button admin-button-secondary"
+                onClick={onCancel}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-button admin-button-danger"
+                onClick={() => setStep(2)}
+              >
+                Continue
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 id="delete-order-title">Are you absolutely sure?</h2>
+            <p id="delete-order-copy">
+              You are about to permanently delete order <strong>{order.orderId}</strong> for{" "}
+              <strong>{order.customerName || "this customer"}</strong> ({formatThb(order.totalThb)}).
+              This action cannot be undone.
+            </p>
 
-        {message ? (
-          <p className="admin-page-error" role="alert">
-            {message}
-          </p>
-        ) : null}
+            <div className="admin-confirm-warning-box">
+              <span className="admin-confirm-warning-icon" aria-hidden="true">
+                ⚠️
+              </span>
+              <div>
+                <strong>Permanent Deletion</strong>
+                <p>
+                  All items and records for {order.orderId} will be permanently removed.
+                </p>
+              </div>
+            </div>
 
-        <div className="admin-confirm-actions">
-          <button
-            type="button"
-            className="admin-button admin-button-secondary"
-            onClick={onCancel}
-            disabled={deleting}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="admin-button admin-button-danger"
-            onClick={deleteOrder}
-            disabled={!confirmed || deleting}
-          >
-            {deleting ? "Deleting…" : "Delete order"}
-          </button>
-        </div>
+            {message ? (
+              <p className="admin-page-error" role="alert">
+                {message}
+              </p>
+            ) : null}
+
+            <div className="admin-confirm-actions">
+              <button
+                type="button"
+                className="admin-button admin-button-secondary"
+                onClick={onCancel}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="admin-button admin-button-danger"
+                onClick={deleteOrder}
+                disabled={deleting}
+              >
+                {deleting ? "Deleting…" : "Delete Order"}
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
