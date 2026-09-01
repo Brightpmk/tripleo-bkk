@@ -39,7 +39,7 @@ export function UniversityLanding() {
 
         <div className="header-right">
           <Link className="track-nav-btn" href="/tracking">
-            Track order
+            ติดตามคำสั่งซื้อ
           </Link>
           {cartPath ? (
             <Link
