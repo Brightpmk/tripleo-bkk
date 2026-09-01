@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { readEffectiveCss } from "./helpers/effective-css";
 
 describe("product detail gallery image fitting", () => {
-  const cssPath = resolve(__dirname, "../app/globals.css");
-  const css = readFileSync(cssPath, "utf-8");
+  // globals.css is an import entrypoint; assert on the inlined result.
+  const css = readEffectiveCss();
 
   it("sets object-fit: contain on product detail gallery slides", () => {
     // Extract .gallery-slide img block

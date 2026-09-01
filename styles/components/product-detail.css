@@ -1,0 +1,330 @@
+/* ================================================================
+   Product detail + gallery — mobile-first
+   ================================================================ */
+
+.detail-section {
+  max-width: 720px;
+}
+
+.detail-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  margin-bottom: var(--s-3);
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .detail-back:hover {
+    color: var(--ink);
+  }
+}
+
+.product-card-link {
+  color: inherit;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card-link:hover {
+    color: var(--accent);
+  }
+}
+
+/* ── Gallery ────────────────────────────────────────────────────── */
+.gallery {
+  position: relative;
+  margin: 0 calc(var(--gutter) * -1) var(--s-5);
+}
+
+@media (min-width: 720px) {
+  .gallery {
+    margin-inline: 0;
+    border-radius: var(--r-3);
+    overflow: hidden;
+  }
+}
+
+/*
+ * Native scroll-snap does the swiping: real momentum on touch, no library,
+ * and it degrades to an ordinary scroller if JS never runs.
+ */
+.gallery-track {
+  display: flex;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: var(--media);
+  position: relative;
+  width: 100%;
+  max-height: min(75vh, 640px);
+  aspect-ratio: var(--gallery-aspect, 4 / 3);
+  transition: aspect-ratio var(--t-2, 0.25s) ease;
+}
+
+@media (min-width: 720px) {
+  .gallery-track {
+    border-radius: var(--r-3);
+  }
+}
+
+.gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery-track:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.gallery-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: var(--media);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+/*
+ * Show FULL product image by default without cropping, adapting to original aspect ratio.
+ * contain, never cover: product detail images preserve full original framing.
+ */
+.gallery-slide img {
+  max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.gallery-counter {
+  position: absolute;
+  top: var(--s-3);
+  right: var(--s-3);
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: rgba(11, 11, 12, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  z-index: 2;
+}
+
+.gallery-dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--s-2);
+  padding: var(--s-3) 0 0;
+}
+
+/* Visually a dot, but a full 44px touch target around it. */
+.gallery-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--line-bright);
+  transition: background var(--t-1) var(--ease);
+}
+
+.gallery-dot::after {
+  content: "";
+  position: absolute;
+  inset: -18px;
+}
+
+.gallery-dot.is-active {
+  background: var(--accent);
+}
+
+.gallery-thumbs {
+  display: none;
+}
+
+@media (min-width: 720px) {
+  .gallery-thumbs {
+    display: flex;
+    gap: var(--s-2);
+    padding-top: var(--s-3);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .gallery-thumbs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .gallery-thumb {
+    flex: 0 0 auto;
+    width: 64px;
+    height: 80px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--r-2);
+    background: var(--media);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color var(--t-1) var(--ease), opacity var(--t-1) var(--ease);
+    opacity: 0.6;
+  }
+
+  .gallery-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .gallery-thumb.is-active {
+    border-color: var(--accent);
+    opacity: 1;
+  }
+}
+
+/* ── Detail body ────────────────────────────────────────────────── */
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.detail-title {
+  margin-top: 4px;
+}
+
+.detail-name {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+}
+
+.detail-price {
+  margin: var(--s-2) 0 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-field {
+  margin-top: var(--s-5);
+}
+
+.detail-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+}
+
+.detail-added {
+  margin: var(--s-2) 0 0;
+  color: var(--ok);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ── Lightbox ───────────────────────────────────────────────────── */
+.lightbox {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(7, 7, 8, 0.97);
+}
+
+.lightbox-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 0 0 auto;
+  gap: var(--s-3);
+  padding: calc(var(--s-3) + env(safe-area-inset-top))
+    max(var(--s-4), env(safe-area-inset-right)) var(--s-3)
+    max(var(--s-4), env(safe-area-inset-left));
+}
+
+.lightbox-counter {
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Top-right and a full 48px target — reachable without a two-hand grip. */
+.lightbox-close {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-track {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.lightbox-track::-webkit-scrollbar {
+  display: none;
+}
+
+.lightbox-slide {
+  display: grid;
+  place-items: center;
+  flex: 0 0 100%;
+  width: 100%;
+  padding: 0 var(--s-3);
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+
+/* contain, never cover: inspecting an image must not crop it. */
+.lightbox-slide img.is-contain {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+@media (max-width: 359px) {
+  .gallery-thumb {
+    width: 56px;
+    height: 70px;
+  }
+}
+

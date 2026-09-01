@@ -1,0 +1,241 @@
+/* ── Checkout ───────────────────────────────────────────────────── */
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-6);
+}
+
+.checkout-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-7);
+  min-width: 0;
+}
+
+@media (min-width: 900px) {
+  .checkout-layout {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: var(--s-8);
+    align-items: start;
+  }
+
+  .checkout-aside {
+    position: sticky;
+    top: calc(var(--header-h) + env(safe-area-inset-top) + var(--s-5));
+  }
+
+  .checkout-aside .summary {
+    margin-top: 0;
+  }
+}
+
+.form-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  min-width: 0;
+}
+
+.form-block-title {
+  margin: 0;
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-5);
+}
+
+@media (min-width: 720px) {
+  .field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-width: 0;
+}
+
+.field-label {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+.field-hint {
+  font-size: 0.78125rem;
+  color: var(--ink-3);
+}
+
+.field-input,
+.field-textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--ink);
+  /* 16px — never let iOS zoom the viewport on focus */
+  font-size: 16px;
+  line-height: 1.4;
+  transition: border-color var(--t-1) var(--ease),
+    box-shadow var(--t-1) var(--ease), background var(--t-1) var(--ease);
+}
+
+.field-textarea {
+  min-height: 116px;
+  resize: vertical;
+}
+
+.field-input:focus,
+.field-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface-3);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.field-input[aria-invalid="true"],
+.field-textarea[aria-invalid="true"] {
+  border-color: var(--bad);
+}
+
+.field-input[aria-invalid="true"]:focus,
+.field-textarea[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--bad-dim);
+}
+
+.field-input::placeholder,
+.field-textarea::placeholder {
+  color: var(--ink-3);
+}
+
+.field-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--bad);
+}
+
+.form-alert {
+  display: flex;
+  gap: var(--s-3);
+  margin: 0;
+  padding: var(--s-4);
+  border: 1px solid var(--bad-line);
+  border-radius: var(--r-2);
+  background: var(--bad-dim);
+  color: var(--bad);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ── Choice cards (delivery) ────────────────────────────────────── */
+.choice-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-3);
+}
+
+@media (min-width: 560px) {
+  .choice-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.choice {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color var(--t-1) var(--ease),
+    background var(--t-1) var(--ease);
+}
+
+.choice.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.choice input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  margin: 0;
+}
+
+.choice:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.choice-mark {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  border: 1.5px solid var(--line-bright);
+  border-radius: 50%;
+  transition: border-color var(--t-1) var(--ease),
+    background var(--t-1) var(--ease), box-shadow var(--t-1) var(--ease);
+}
+
+.choice.is-selected .choice-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: inset 0 0 0 4px var(--surface);
+}
+
+.choice-body {
+  min-width: 0;
+}
+
+.choice-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--s-2);
+}
+
+.choice-title {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.choice-price {
+  font-size: 0.78125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.choice-desc {
+  margin: 4px 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+

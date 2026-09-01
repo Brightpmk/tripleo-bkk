@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { readEffectiveCss } from "./helpers/effective-css";
 
 const projectRoot = resolve(__dirname, "..");
 
@@ -10,7 +11,8 @@ function readSource(relativePath: string) {
 }
 
 const layout = readSource("app/layout.tsx");
-const css = readSource("app/globals.css");
+// globals.css is an import entrypoint; assert on the inlined result.
+const css = readEffectiveCss();
 const adminCss = readSource("app/admin/admin.css");
 
 describe("English typography is untouched", () => {
@@ -43,20 +45,27 @@ describe("English typography is untouched", () => {
   });
 
   it("changes no existing English type rule — only adds Thai ones", () => {
-    // Every removed line in the stylesheet diff must be part of the single
-    // --font-body declaration that gained the Thai fallback. Nothing else
-    // about English rendering may move.
-    const diff = execFileSync(
-      "git",
-      ["diff", "--unified=0", "--", "app/globals.css", "app/admin/admin.css"],
-      { cwd: projectRoot, encoding: "utf-8" }
+    // Compares stylesheet *content* against HEAD rather than a file diff, so
+    // splitting globals.css into ../styles/ registers as a move, not a
+    // removal. A rule that genuinely disappears still fails here.
+    const headCss = execFileSync("git", ["show", "HEAD:app/globals.css"], {
+      cwd: projectRoot,
+      encoding: "utf-8"
+    });
+
+    const present = new Set(
+      [css, adminCss]
+        .join(String.fromCharCode(10))
+        .split(String.fromCharCode(10))
+        .map((line) => line.trim())
+        .filter(Boolean)
     );
 
-    const removed = diff
-      .split("\n")
-      .filter((line) => line.startsWith("-") && !line.startsWith("---"))
-      .map((line) => line.slice(1).trim())
-      .filter(Boolean);
+    const removed = headCss
+      .split(String.fromCharCode(10))
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .filter((line) => !present.has(line));
 
     removed.forEach((line) =>
       expect(line, `unexpected removal: ${line}`).toMatch(

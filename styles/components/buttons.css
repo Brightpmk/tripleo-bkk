@@ -1,0 +1,115 @@
+/* ── Buttons ────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 50px;
+  padding: 0 var(--s-6);
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  text-align: center;
+  transition: background var(--t-1) var(--ease),
+    border-color var(--t-1) var(--ease), color var(--t-1) var(--ease),
+    opacity var(--t-1) var(--ease), transform var(--t-1) var(--ease);
+}
+
+.btn:disabled {
+  opacity: 0.38;
+}
+
+.btn:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-secondary {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+  color: var(--ink);
+}
+
+.btn-quiet {
+  min-height: var(--tap);
+  padding: 0 var(--s-3);
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-2);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+}
+
+.btn-sm {
+  min-height: var(--tap);
+  padding: 0 var(--s-4);
+  font-size: 0.75rem;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: var(--tap);
+  height: var(--tap);
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 1.05rem;
+  line-height: 1;
+  transition: color var(--t-1) var(--ease), background var(--t-1) var(--ease);
+}
+
+.icon-btn:active {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+/* Hover effects are opt-in: never let a phone get stuck in :hover */
+@media (hover: hover) and (pointer: fine) {
+  .wordmark:hover { color: var(--ink-2); }
+  .cart-btn:not(:disabled):hover { border-color: var(--line-bright); background: var(--surface-3); }
+  .uni-card:hover { border-color: var(--line-bright); background: var(--surface-2); transform: translateY(-1px); }
+  .uni-card:hover::before { opacity: 0.75; }
+  .uni-card:hover .uni-card-go { border-color: var(--accent); color: var(--ink); }
+  .progress-step:not(:disabled):not([aria-current="step"]):hover { color: var(--ink); background: var(--surface-2); }
+  .btn-primary:not(:disabled):hover { background: var(--accent-hi); border-color: var(--accent-hi); }
+  .btn-secondary:not(:disabled):hover { background: var(--surface-3); border-color: var(--line-bright); }
+  .btn-quiet:not(:disabled):hover { color: var(--ink); background: var(--surface-2); }
+  .icon-btn:hover { color: var(--bad); background: var(--bad-dim); }
+  .product-card:hover { border-color: var(--line-strong); }
+  .product-card:hover .product-card-media img { transform: scale(1.035); }
+  .size-opt:not(.is-selected):hover { border-color: var(--line-bright); color: var(--ink); }
+  .qty-btn:not(:disabled):hover { background: var(--surface-3); color: var(--ink); }
+  .choice:hover { border-color: var(--line-bright); }
+  .upload:hover { border-color: var(--accent-line); background: var(--surface-2); }
+  .qr-save:hover { border-color: var(--line-bright); background: var(--surface-3); }
+}
+
+/* ── Spinner ────────────────────────────────────────────────────── */
+.spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+

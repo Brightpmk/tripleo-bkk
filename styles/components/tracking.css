@@ -1,0 +1,427 @@
+/* ================================================================
+   Order tracking — public, mobile-first
+   ================================================================ */
+
+.track-section {
+  max-width: 680px;
+}
+
+.track-lede {
+  max-width: 46ch;
+  margin-bottom: var(--s-6);
+}
+
+.track-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  margin-bottom: var(--s-7);
+}
+
+/* Two obvious options rather than a dropdown — one tap to switch. */
+.track-modes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+  padding: var(--s-1);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--surface);
+}
+
+.track-mode {
+  min-height: var(--tap);
+  padding: 0 var(--s-2);
+  border: 1px solid transparent;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: background var(--t-1) var(--ease), color var(--t-1) var(--ease);
+}
+
+.track-mode.is-selected {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .track-mode:not(.is-selected):hover {
+    color: var(--ink);
+    background: var(--surface-2);
+  }
+}
+
+.track-alert {
+  margin-top: var(--s-4);
+}
+
+.track-count {
+  margin: 0 0 var(--s-3);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.track-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+}
+
+/* ── Order card ─────────────────────────────────────────────────── */
+.track-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-4);
+  padding: var(--s-5);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--surface);
+}
+
+.track-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding-bottom: var(--s-3);
+  border-bottom: 1px solid var(--line);
+}
+
+.track-card-id {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.track-card-order {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.track-card-date {
+  font-size: 0.78125rem;
+  color: var(--ink-3);
+}
+
+.track-card-uni {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+/* ── Status: payment stays visibly separate from fulfilment ─────── */
+.track-status-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--s-4);
+}
+
+@media (min-width: 520px) {
+  .track-status-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.track-status-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.track-status-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.track-status-note {
+  font-size: 0.78125rem;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+/* Text always carries the meaning; colour only reinforces it. */
+.track-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.track-badge.is-ok {
+  color: var(--ok);
+  border-color: var(--ok-line);
+  background: var(--ok-dim);
+}
+
+.track-badge.is-warn {
+  color: #D6A868;
+  border-color: rgba(214, 168, 104, 0.3);
+  background: rgba(214, 168, 104, 0.12);
+}
+
+.track-badge.is-info {
+  color: var(--ink);
+  border-color: var(--line-bright);
+  background: var(--surface-3);
+}
+
+.track-badge.is-bad {
+  color: var(--bad);
+  border-color: var(--bad-line);
+  background: var(--bad-dim);
+}
+
+/* ── Timeline: vertical on phones, stays legible at 320px ───────── */
+.track-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.track-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: var(--s-3);
+  padding-bottom: var(--s-4);
+}
+
+.track-step:last-child {
+  padding-bottom: 0;
+}
+
+/* Connector line between dots. */
+.track-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 20px;
+  bottom: 2px;
+  left: 10px;
+  width: 1px;
+  background: var(--line-strong);
+}
+
+.track-step.is-complete:not(:last-child)::before {
+  background: var(--accent-line);
+}
+
+.track-step-dot {
+  position: relative;
+  z-index: 1;
+  width: 14px;
+  height: 14px;
+  margin-top: 4px;
+  margin-left: 4px;
+  border: 1px solid var(--line-bright);
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.track-step.is-complete .track-step-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.track-step.is-current .track-step-dot {
+  box-shadow: 0 0 0 4px var(--accent-dim);
+}
+
+.track-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.track-step-label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.track-step.is-complete .track-step-label {
+  color: var(--ink);
+}
+
+.track-step-desc {
+  font-size: 0.78125rem;
+  color: var(--ink-3);
+}
+
+.track-cancelled {
+  margin: 0;
+  padding: var(--s-4);
+  border: 1px solid var(--bad-line);
+  border-radius: var(--r-2);
+  background: var(--bad-dim);
+  color: var(--bad);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+/* ── Items ──────────────────────────────────────────────────────── */
+.track-section-label {
+  display: block;
+  margin-bottom: var(--s-2);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.track-item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.track-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-2) 0;
+}
+
+.track-item + .track-item {
+  border-top: 1px solid var(--line);
+}
+
+.track-item-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.track-item-meta {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.track-empty-items {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-3);
+}
+
+/* ── Facts / shipping ───────────────────────────────────────────── */
+.track-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+}
+
+.track-fact {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.track-fact-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.track-fact-value {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+/* Long tracking numbers must wrap, never widen the card. */
+.track-tracking-number {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  word-break: break-all;
+}
+
+.track-shipping {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--line);
+}
+
+.track-pending-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ── Footer entry point ─────────────────────────────────────────── */
+.site-footer-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--tap);
+  margin-top: var(--s-2);
+  padding: 0 var(--s-4);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: border-color var(--t-1) var(--ease),
+    background var(--t-1) var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .site-footer-link:hover {
+    border-color: var(--line-bright);
+    background: var(--surface-2);
+  }
+}
+
+@media (max-width: 359px) {
+  .track-card {
+    padding: var(--s-4);
+  }
+
+  .track-modes {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+

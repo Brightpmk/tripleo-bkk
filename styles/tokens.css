@@ -1,0 +1,123 @@
+/* ── Tokens ─────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+
+  /* Ground → surfaces (each step is a real, visible layer) */
+  --bg: #0B0B0C;
+  --bg-sunken: #070708;
+  --surface: #111113;
+  --surface-2: #17171A;
+  --surface-3: #1F1F23;
+  --media: #16161A;
+
+  /* Hairlines */
+  --line: #232327;
+  --line-strong: #33333A;
+  --line-bright: #4C4C55;
+
+  /* Ink */
+  --ink: #F3F1ED;
+  --ink-2: #A4A19B;
+  --ink-3: #706D68;
+  --on-accent: #0B0B0C;
+
+  /* Accent — bone. Restrained, never gold. */
+  --accent: #EDE9E3;
+  --accent-hi: #FFFFFF;
+  --accent-dim: rgba(237, 233, 227, 0.07);
+  --accent-line: rgba(237, 233, 227, 0.26);
+  --accent-ring: rgba(237, 233, 227, 0.22);
+
+  /* Semantic — muted, never neon */
+  --ok: #82B18E;
+  --ok-dim: rgba(130, 177, 142, 0.11);
+  --ok-line: rgba(130, 177, 142, 0.26);
+  --bad: #DE6C60;
+  --bad-dim: rgba(222, 108, 96, 0.1);
+  --bad-line: rgba(222, 108, 96, 0.26);
+
+  /* Type */
+  /* Inter first: it covers Latin, so English is unchanged. Everything after
+     it is only ever reached for a glyph Inter does not have — in practice
+     Thai — and it is a plain system UI stack on purpose: Tahoma on Windows,
+     the system Thai face via -apple-system on iOS/macOS, Noto Sans Thai via
+     sans-serif on Android. Neutral and highly readable rather than
+     decorative, and no font is downloaded for it. */
+  --font-body: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-display: var(--font-body);
+  --font-serif: var(--font-serif), "Cormorant Garamond", Garamond, Georgia, "Times New Roman", serif;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+
+  /* ── Thai role tokens ──────────────────────────────────────────
+     Five roles, no more. Every Thai string in the customer UI is one
+     of them, so weight, size, leading, tracking and the muted tone
+     are decided once here instead of per component. English is not
+     affected: these tokens are only ever read by the Thai role rules
+     at the end of this file.
+     ───────────────────────────────────────────────────────────── */
+  --th-tracking: 0.01em;
+  --th-muted: var(--ink-2);
+
+  /* Body — normal readable customer text. 16px */
+  --th-body-size: 1rem;
+  --th-body-weight: 400;
+  --th-body-line: 1.65;
+
+  /* Label — form labels and summary labels. 14px */
+  --th-label-size: 0.875rem;
+  --th-label-weight: 600;
+  --th-label-line: 1.5;
+
+  /* Section label — small category and section captions. 13px */
+  --th-section-size: 0.8125rem;
+  --th-section-weight: 600;
+  --th-section-line: 1.45;
+
+  /* CTA — buttons and important actions. 15px */
+  --th-cta-size: 0.9375rem;
+  --th-cta-weight: 600;
+  --th-cta-line: 1.4;
+
+  /* Helper — secondary explanatory text. 13px, muted */
+  --th-helper-size: 0.8125rem;
+  --th-helper-weight: 400;
+  --th-helper-line: 1.6;
+
+  /* Space */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+  --s-9: 56px;
+  --s-10: 72px;
+
+  /* Radius — tight and architectural */
+  --r-1: 3px;
+  --r-2: 6px;
+  --r-3: 10px;
+  --r-4: 14px;
+  --r-pill: 999px;
+
+  /* Elevation */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 24px 60px rgba(0, 0, 0, 0.55);
+
+  /* Layout */
+  --gutter: clamp(16px, 4.5vw, 40px);
+  --maxw: 1180px;
+  --header-h: 56px;
+  --tap: 44px;
+
+  /* Motion */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-1: 140ms;
+  --t-2: 240ms;
+  --t-3: 420ms;
+}
+

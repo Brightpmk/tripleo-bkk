@@ -1,0 +1,134 @@
+/* ── Review panels ──────────────────────────────────────────────── */
+.panel {
+  margin-bottom: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.panel-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.panel-body {
+  margin: 0;
+  padding: var(--s-2) var(--s-4);
+}
+
+.line-item {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+}
+
+.line-item + .line-item {
+  border-top: 1px solid var(--line);
+}
+
+.line-item-media {
+  width: 48px;
+  height: 58px;
+  border-radius: var(--r-1);
+  background: var(--media);
+  overflow: hidden;
+}
+
+.line-item-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.line-item-text {
+  min-width: 0;
+}
+
+.line-item-name {
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.line-item-meta {
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.line-item-total {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: var(--s-4);
+  padding: var(--s-3) 0;
+  font-size: 0.9375rem;
+}
+
+.kv + .kv {
+  border-top: 1px solid var(--line);
+}
+
+.kv dt {
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.kv dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.kv dd.is-ok {
+  color: var(--ok);
+}
+
+.review-note {
+  margin: var(--s-4) 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+.slip-proof {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+}
+
+.slip-proof img {
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  object-fit: cover;
+}
+
