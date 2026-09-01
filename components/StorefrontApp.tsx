@@ -415,22 +415,24 @@ export function StorefrontApp({
           <Link className="track-nav-btn" href="/tracking">
             Track order
           </Link>
-          <button
-            className="cart-btn"
-            type="button"
-            onClick={() => setStep(cartItems.length > 0 ? "cart" : "shop")}
-            disabled={!selectedUniversityId}
-            aria-label={
-              cartCount === 1 ? "Cart, 1 item" : `Cart, ${cartCount} items`
-            }
-          >
-            Cart
-            {cartCount > 0 ? (
-              <span className="cart-btn-count" aria-hidden="true">
-                {cartCount}
-              </span>
-            ) : null}
-          </button>
+          {step !== "success" ? (
+            <button
+              className="cart-btn"
+              type="button"
+              onClick={() => setStep(cartItems.length > 0 ? "cart" : "shop")}
+              disabled={!selectedUniversityId}
+              aria-label={
+                cartCount === 1 ? "Cart, 1 item" : `Cart, ${cartCount} items`
+              }
+            >
+              Cart
+              {cartCount > 0 ? (
+                <span className="cart-btn-count" aria-hidden="true">
+                  {cartCount}
+                </span>
+              ) : null}
+            </button>
+          ) : null}
         </div>
       </header>
 
