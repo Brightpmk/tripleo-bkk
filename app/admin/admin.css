@@ -1739,3 +1739,42 @@
     justify-content: flex-end;
   }
 }
+
+/* ── Danger zone (permanent order deletion) ─────────────────────── */
+.admin-danger-zone {
+  /* Separated from the routine save controls so a mis-tap is unlikely. */
+  margin-top: var(--s-4);
+  border-color: var(--bad-line);
+  background: var(--surface);
+}
+
+.admin-danger-copy {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.admin-danger-trigger {
+  align-self: flex-start;
+  border-color: var(--bad-line);
+  color: var(--bad);
+}
+
+.admin-confirm-field {
+  margin-bottom: var(--s-4);
+}
+
+.admin-confirm-field input {
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.admin-confirm-field > span {
+  overflow-wrap: anywhere;
+}
+
+/* A long ORDER_ID must wrap rather than widen the dialog. */
+.admin-confirm h2 {
+  overflow-wrap: anywhere;
+}

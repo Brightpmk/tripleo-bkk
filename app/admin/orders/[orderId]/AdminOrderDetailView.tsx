@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { formatThb } from "@/lib/format";
 import type { PaymentStatus } from "@/lib/orders";
@@ -35,6 +36,8 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [message, setMessage] = useState("");
   const [slipOpen, setSlipOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const router = useRouter();
 
   const dirty =
     paymentStatus !== current.paymentStatus ||
@@ -320,9 +323,199 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
             <Row label="Payment" value={<PaymentBadge order={current} />} />
             <Row label="Order" value={<OrderStatusBadge order={current} />} />
           </div>
+          <div className="admin-panel admin-danger-zone">
+            <h3 className="admin-panel-title">Danger zone</h3>
+            <p className="admin-danger-copy">
+              Cancelling keeps this order and its history. Deleting removes it
+              permanently — use it only for test or accidental records.
+            </p>
+            <button
+              type="button"
+              className="admin-delete-link admin-danger-trigger"
+              onClick={() => setConfirmingDelete(true)}
+              disabled={saveState === "saving"}
+            >
+              Delete order
+            </button>
+          </div>
         </aside>
       </div>
+
+      {confirmingDelete ? (
+        <DeleteOrderConfirmation
+          order={current}
+          onCancel={() => setConfirmingDelete(false)}
+          onDeleted={(warning) => {
+            // The detail page no longer exists; go back to the list and let
+            // the server component re-read the invalidated cache.
+            const query = new URLSearchParams({
+              deleted: current.orderId,
+              ...(warning ? { warning } : {})
+            });
+            router.replace(`/admin/orders?${query.toString()}`);
+            router.refresh();
+          }}
+        />
+      ) : null}
     </section>
+  );
+}
+
+/**
+ * Irreversible, so it asks for the ORDER_ID to be typed out. That single
+ * extra step makes deleting the wrong order essentially impossible while
+ * staying usable on a phone.
+ */
+function DeleteOrderConfirmation({
+  order,
+  onCancel,
+  onDeleted
+}: {
+  order: AdminOrderDetail;
+  onCancel: () => void;
+  onDeleted: (warning: string) => void;
+}) {
+  const [typed, setTyped] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const confirmed = typed.trim().toUpperCase() === order.orderId.toUpperCase();
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !deleting) {
+        onCancel();
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [deleting, onCancel]);
+
+  async function deleteOrder() {
+    if (!confirmed || deleting) {
+      return;
+    }
+
+    setDeleting(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/orders/${encodeURIComponent(order.orderId)}`,
+        { method: "DELETE" }
+      );
+      const result = (await response.json()) as {
+        ok?: boolean;
+        message?: string;
+        warning?: string;
+      };
+
+      if (!response.ok || !result.ok) {
+        setMessage(result.message || "Order could not be deleted.");
+        setDeleting(false);
+        return;
+      }
+
+      onDeleted(result.warning ?? "");
+    } catch {
+      setMessage("Order could not be deleted. Please try again.");
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <div
+      className="admin-confirm-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget && !deleting) {
+          onCancel();
+        }
+      }}
+    >
+      <div
+        className="admin-confirm"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="delete-order-title"
+        aria-describedby="delete-order-copy"
+      >
+        <h2 id="delete-order-title">Delete order {order.orderId}?</h2>
+        <p id="delete-order-copy">
+          This permanently deletes the order and all associated order items.
+          This action cannot be undone.
+        </p>
+
+        <dl className="admin-confirm-facts">
+          <div>
+            <dt>Order ID</dt>
+            <dd>{order.orderId}</dd>
+          </div>
+          <div>
+            <dt>Customer</dt>
+            <dd>{order.customerName || "—"}</dd>
+          </div>
+          <div>
+            <dt>Total</dt>
+            <dd>{formatThb(order.totalThb)}</dd>
+          </div>
+          <div>
+            <dt>Placed</dt>
+            <dd>{formatBangkokDateTime(order.createdAtIso)}</dd>
+          </div>
+        </dl>
+
+        <label className="admin-field admin-confirm-field">
+          <span>Type {order.orderId} to confirm</span>
+          <input
+            value={typed}
+            onChange={(event) => setTyped(event.target.value)}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            disabled={deleting}
+            aria-label={`Type ${order.orderId} to confirm deletion`}
+          />
+        </label>
+
+        <p className="admin-confirm-note">
+          To keep this order but stop fulfilment, set its status to Cancelled
+          instead.
+        </p>
+
+        {message ? (
+          <p className="admin-page-error" role="alert">
+            {message}
+          </p>
+        ) : null}
+
+        <div className="admin-confirm-actions">
+          <button
+            type="button"
+            className="admin-button admin-button-secondary"
+            onClick={onCancel}
+            disabled={deleting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="admin-button admin-button-danger"
+            onClick={deleteOrder}
+            disabled={!confirmed || deleting}
+          >
+            {deleting ? "Deleting…" : "Delete order"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

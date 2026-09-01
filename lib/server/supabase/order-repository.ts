@@ -10,7 +10,10 @@ import { getUniversityBySheetValue } from "@/lib/orders-admin";
 import { getUniversityById } from "@/lib/catalog";
 import type { TrackingSearchMode } from "@/lib/tracking";
 import { OrderAdminError } from "../order-admin-error";
-import type { AdminOrderRepository } from "../order-repository";
+import type {
+  AdminOrderRepository,
+  DeletedOrderRecord
+} from "../order-repository";
 import {
   getSupabaseServiceClient,
   type SupabaseOrderItemRow,
@@ -29,6 +32,58 @@ export class SupabaseOrderRepository implements AdminOrderRepository {
   async getSlipFileId(orderId: string) {
     return getSupabaseOrderSlipFileId(orderId);
   }
+
+  async deleteOrder(orderId: string) {
+    return deleteSupabaseOrder(orderId);
+  }
+}
+
+/**
+ * One atomic call: order_items cascade with the order, and the slip
+ * reference comes back with the deleted row so cleanup never needs a
+ * second read that could race with the delete.
+ */
+export async function deleteSupabaseOrder(
+  orderId: string
+): Promise<DeletedOrderRecord | null> {
+  const supabase = getSupabaseServiceClient();
+  const { data, error } = await supabase.rpc("delete_order_by_order_id", {
+    p_order_id: orderId
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      throw new OrderAdminError(
+        "This order ID appears more than once, so it was not deleted.",
+        409
+      );
+    }
+
+    // Postgres/Supabase internals never reach the browser.
+    console.error("Order delete failed", {
+      operation: "delete-order",
+      orderId,
+      code: error.code
+    });
+
+    throw new OrderAdminError("Order could not be deleted. Please try again.", 500);
+  }
+
+  const [deleted] = (data ?? []) as Array<{
+    deleted_order_id: string;
+    deleted_slip_file_id: string | null;
+    deleted_item_count: number;
+  }>;
+
+  if (!deleted) {
+    return null;
+  }
+
+  return {
+    orderId: deleted.deleted_order_id,
+    slipFileId: deleted.deleted_slip_file_id,
+    deletedItemCount: deleted.deleted_item_count
+  };
 }
 
 export async function listSupabaseOrders(): Promise<AdminOrderDetail[]> {

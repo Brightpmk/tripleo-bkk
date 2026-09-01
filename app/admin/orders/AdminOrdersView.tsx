@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { universities } from "@/lib/catalog";
 import type { UniversityId } from "@/lib/catalog";
@@ -40,6 +41,9 @@ export function AdminOrdersView({
     defaultAdminOrderFilters
   );
   const [sort, setSort] = useState<AdminOrderSort>("newest");
+  const searchParams = useSearchParams();
+  const deletedOrderId = searchParams.get("deleted");
+  const deleteWarning = searchParams.get("warning");
   const [page, setPage] = useState(1);
 
   const visible = useMemo(
@@ -79,6 +83,17 @@ export function AdminOrdersView({
           </p>
         </div>
       </div>
+
+      {deletedOrderId ? (
+        <p
+          className={deleteWarning ? "admin-warning" : "admin-notice"}
+          role="status"
+        >
+          {deleteWarning
+            ? `Order ${deletedOrderId} was deleted. ${deleteWarning}`
+            : `Order ${deletedOrderId} was permanently deleted.`}
+        </p>
+      ) : null}
 
       {loadError ? (
         <p className="admin-page-error" role="alert">

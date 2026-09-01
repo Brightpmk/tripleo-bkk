@@ -21,7 +21,20 @@ export interface AdminOrderRepository {
    * identifier can never be serialised into a client payload.
    */
   getSlipFileId(orderId: string): Promise<string | null>;
+  /**
+   * Permanently removes the order and its items in one atomic operation,
+   * returning the slip reference so the caller can clean up storage after
+   * the database has already committed. Null when no order matched.
+   */
+  deleteOrder(orderId: string): Promise<DeletedOrderRecord | null>;
 }
+
+export type DeletedOrderRecord = {
+  orderId: string;
+  /** Server-only. Never serialised into a client payload. */
+  slipFileId: string | null;
+  deletedItemCount: number;
+};
 
 export function toOrderSummary(order: AdminOrderDetail): AdminOrderSummary {
   const {

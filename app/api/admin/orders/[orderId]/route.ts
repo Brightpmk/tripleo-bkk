@@ -1,7 +1,10 @@
 import { hasValidAdminSession } from "@/lib/server/admin-auth";
 import { isSameOriginRequest } from "@/lib/server/admin-request-security";
 import { OrderAdminError } from "@/lib/server/order-admin-error";
-import { updateAdminOrder } from "@/lib/server/order-admin-service";
+import {
+  deleteAdminOrder,
+  updateAdminOrder
+} from "@/lib/server/order-admin-service";
 
 export const runtime = "nodejs";
 
@@ -62,4 +65,55 @@ function orderErrorResponse(error: unknown, fallbackMessage: string) {
   });
 
   return Response.json({ ok: false, message: fallbackMessage }, { status: 500 });
+}
+
+/**
+ * Permanently deletes an order and its items. Not the same as setting
+ * ORDER_STATUS = 'cancelled', which keeps the record and its tracking
+ * history.
+ *
+ * The order is addressed only by the public ORDER_ID from the route — a
+ * client-supplied database UUID is never accepted or trusted.
+ */
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ orderId: string }> }
+) {
+  if (!(await hasValidAdminSession())) {
+    return Response.json(
+      { ok: false, message: "Authentication required." },
+      { status: 401 }
+    );
+  }
+
+  if (!isSameOriginRequest(request)) {
+    return Response.json(
+      { ok: false, message: "Request could not be verified." },
+      { status: 403 }
+    );
+  }
+
+  try {
+    const { orderId } = await context.params;
+    const result = await deleteAdminOrder(orderId);
+
+    return Response.json({
+      ok: true,
+      orderId: result.orderId,
+      deletedItemCount: result.deletedItemCount,
+      slipCleanup: result.slipCleanup,
+      // Non-blocking: the order is gone either way.
+      ...(result.slipCleanup === "failed"
+        ? {
+            warning:
+              "Order deleted, but the payment slip could not be cleaned up automatically."
+          }
+        : {})
+    });
+  } catch (error) {
+    return orderErrorResponse(
+      error,
+      "Order could not be deleted. Please try again."
+    );
+  }
 }

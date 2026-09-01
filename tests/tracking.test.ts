@@ -58,7 +58,8 @@ function repo(orders: AdminOrderDetail[]): AdminOrderRepository {
   return {
     listOrders: vi.fn(async () => orders),
     updateOrder: vi.fn(),
-    getSlipFileId: vi.fn(async () => "drive-secret-1")
+    getSlipFileId: vi.fn(async () => "drive-secret-1"),
+    deleteOrder: vi.fn(async () => null)
   };
 }
 
@@ -409,7 +410,8 @@ describe("tracking failure handling", () => {
         throw new Error("Supabase 503: table orders not reachable");
       }),
       updateOrder: vi.fn(),
-      getSlipFileId: vi.fn()
+      getSlipFileId: vi.fn(),
+      deleteOrder: vi.fn(async () => null)
     };
 
     await expect(

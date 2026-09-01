@@ -78,6 +78,109 @@ export async function getAdminOrderSlipFileId(
   return repository.getSlipFileId(orderId);
 }
 
+/* ── Permanent deletion ─────────────────────────────────────────── */
+
+export type SlipCleanupStatus = "deleted" | "skipped" | "failed";
+
+export type DeleteAdminOrderResult = {
+  orderId: string;
+  deletedItemCount: number;
+  slipCleanup: SlipCleanupStatus;
+};
+
+export type DeleteOrderDependencies = {
+  repository: AdminOrderRepository;
+  /** Best-effort slip removal. Never allowed to fail the deletion. */
+  deleteSlip: (fileId: string) => Promise<void>;
+};
+
+/**
+ * Permanently deletes an order. Distinct from ORDER_STATUS = 'cancelled',
+ * which keeps the row and its tracking history.
+ *
+ * Ordering is deliberate and must not be reversed:
+ *   1. delete the order in Supabase — order_items cascade in the same
+ *      statement, so there can be no orphans and no partial delete
+ *   2. only then, best-effort Google Drive slip cleanup
+ *
+ * Deleting the slip first would risk destroying payment evidence for an
+ * order that still exists if the database write then failed.
+ */
+export async function deleteAdminOrder(
+  orderId: string,
+  dependencies: Partial<DeleteOrderDependencies> = {}
+): Promise<DeleteAdminOrderResult> {
+  const repository = dependencies.repository ?? defaultRepository;
+
+  if (!isValidOrderId(orderId)) {
+    throw new OrderAdminError("Order was not found.", 404);
+  }
+
+  // 1. Database is authoritative. A throw here propagates and the slip is
+  //    left completely untouched.
+  const deleted = await repository.deleteOrder(orderId);
+
+  if (!deleted) {
+    throw new OrderAdminError("Order was not found.", 404);
+  }
+
+  // 2. Committed. Storage cleanup is advisory from here on and can never
+  //    resurrect the order or fail the request.
+  const slipCleanup = await cleanUpSlip(
+    deleted.slipFileId,
+    dependencies.deleteSlip
+  );
+
+  invalidateAdminOrdersCacheSafely();
+
+  console.info("Admin order deleted", {
+    operation: "delete-order",
+    orderId: deleted.orderId,
+    deletedItemCount: deleted.deletedItemCount,
+    slipCleanup
+  });
+
+  return {
+    orderId: deleted.orderId,
+    deletedItemCount: deleted.deletedItemCount,
+    slipCleanup
+  };
+}
+
+async function cleanUpSlip(
+  slipFileId: string | null,
+  deleteSlip?: (fileId: string) => Promise<void>
+): Promise<SlipCleanupStatus> {
+  const fileId = slipFileId?.trim() ?? "";
+
+  // No slip, blank reference, or an unusable one: nothing to clean up.
+  if (!fileId) {
+    return "skipped";
+  }
+
+  try {
+    const remove =
+      deleteSlip ??
+      (async (id: string) => {
+        const { GoogleDriveSlipStorage } = await import(
+          "./payment-slip-storage"
+        );
+        await new GoogleDriveSlipStorage().delete(id);
+      });
+
+    await remove(fileId);
+    return "deleted";
+  } catch (error) {
+    // Safe metadata only — never the file id contents or Drive credentials.
+    console.warn("Order slip cleanup failed", {
+      operation: "delete-order",
+      errorName: error instanceof Error ? error.name : "UnknownError"
+    });
+
+    return "failed";
+  }
+}
+
 export type AdminDashboardData = {
   metrics: AdminDashboardMetrics;
   recentOrders: AdminOrderSummary[];

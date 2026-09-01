@@ -263,7 +263,12 @@ describe("dashboard metrics", () => {
     const listOrders = vi.fn(async () => [detail()]);
 
     const dashboard = await getAdminDashboard(
-      { listOrders, updateOrder: vi.fn(), getSlipFileId: vi.fn() },
+      {
+        listOrders,
+        updateOrder: vi.fn(),
+        getSlipFileId: vi.fn(),
+        deleteOrder: vi.fn(async () => null)
+      },
       new Date("2026-08-30T03:00:00.000Z")
     );
 
@@ -287,6 +292,7 @@ describe("admin order mutations", () => {
       listOrders: vi.fn(async () => [detail()]),
       updateOrder: vi.fn(async () => undefined),
       getSlipFileId: vi.fn(async () => "drive-1"),
+      deleteOrder: vi.fn(async () => null),
       ...overrides
     };
   }
