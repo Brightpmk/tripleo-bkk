@@ -45,12 +45,52 @@
   --bad-line: rgba(222, 108, 96, 0.26);
 
   /* Type */
+  /* Inter first: it covers Latin, so English is unchanged. Everything after
+     it is only ever reached for a glyph Inter does not have — in practice
+     Thai — and it is a plain system UI stack on purpose: Tahoma on Windows,
+     the system Thai face via -apple-system on iOS/macOS, Noto Sans Thai via
+     sans-serif on Android. Neutral and highly readable rather than
+     decorative, and no font is downloaded for it. */
   --font-body: var(--font-sans), "Inter", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, Helvetica, Arial, "Leelawadee UI", "Noto Sans Thai",
-    Thonburi, sans-serif;
+    "Segoe UI", Tahoma, Arial, sans-serif;
   --font-display: var(--font-body);
   --font-serif: var(--font-serif), "Cormorant Garamond", Garamond, Georgia, "Times New Roman", serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, monospace;
+
+  /* ── Thai role tokens ──────────────────────────────────────────
+     Five roles, no more. Every Thai string in the customer UI is one
+     of them, so weight, size, leading, tracking and the muted tone
+     are decided once here instead of per component. English is not
+     affected: these tokens are only ever read by the Thai role rules
+     at the end of this file.
+     ───────────────────────────────────────────────────────────── */
+  --th-tracking: 0.01em;
+  --th-muted: var(--ink-2);
+
+  /* Body — normal readable customer text. 16px */
+  --th-body-size: 1rem;
+  --th-body-weight: 400;
+  --th-body-line: 1.65;
+
+  /* Label — form labels and summary labels. 14px */
+  --th-label-size: 0.875rem;
+  --th-label-weight: 500;
+  --th-label-line: 1.5;
+
+  /* Section label — small category and section captions. 13px */
+  --th-section-size: 0.8125rem;
+  --th-section-weight: 600;
+  --th-section-line: 1.45;
+
+  /* CTA — buttons and important actions. 15px */
+  --th-cta-size: 0.9375rem;
+  --th-cta-weight: 600;
+  --th-cta-line: 1.4;
+
+  /* Helper — secondary explanatory text. 13px, muted */
+  --th-helper-size: 0.8125rem;
+  --th-helper-weight: 400;
+  --th-helper-line: 1.6;
 
   /* Space */
   --s-1: 4px;
@@ -3131,5 +3171,240 @@ legend {
   .gallery-thumb {
     width: 56px;
     height: 70px;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Thai type roles
+   ════════════════════════════════════════════════════════════════
+   The Thai customer journey — Cart, Details, Payment, Review,
+   Success and Tracking — resolves to five roles. Each role is
+   declared once, and the components that carry Thai are listed
+   against it rather than each setting its own size and weight.
+
+   Hierarchy is preserved on purpose: a section caption is not the
+   same as body copy, and a CTA is not the same as a hint. What is
+   removed is the *unsystematic* variation — the same kind of label
+   appearing at 11px/700 in one panel and 13px/600 in the next, or
+   secondary text drifting between two muted greys.
+
+   English is untouched. Every selector here is Thai-only, except
+   .btn, .action-bar-total and .state, whose Thai instances carry an
+   `is-thai` class so the English ones are never matched.
+   ──────────────────────────────────────────────────────────────── */
+
+/* ── Role 1: Body ─────────────────────────────────────────────── */
+.th-body,
+.section-head-note,
+.review-note,
+.pay-steps,
+.done-next p,
+.track-lede,
+.state.is-thai p {
+  font-size: var(--th-body-size);
+  font-weight: var(--th-body-weight);
+  line-height: var(--th-body-line);
+  letter-spacing: var(--th-tracking);
+  text-transform: none;
+  color: var(--th-muted);
+}
+
+/* ── Role 2: Label ────────────────────────────────────────────── */
+.th-label,
+.field-label,
+.summary-row dt,
+.kv dt,
+.choice-title,
+.choice-price,
+.upload-title,
+.qr-payee,
+.action-bar-total.is-thai dt,
+.field-error {
+  font-size: var(--th-label-size);
+  font-weight: var(--th-label-weight);
+  line-height: var(--th-label-line);
+  letter-spacing: var(--th-tracking);
+  text-transform: none;
+}
+
+/* Colour, minus the ones that carry a semantic colour of their own. */
+.th-label,
+.field-label,
+.summary-row dt,
+.kv dt,
+.choice-title,
+.choice-price,
+.upload-title,
+.qr-payee,
+.action-bar-total.is-thai dt {
+  color: var(--ink);
+}
+
+/* ── Role 3: Section label ────────────────────────────────────── */
+.th-section-label,
+.summary-title,
+.panel-title,
+.form-block-title,
+.pay-steps-title,
+.pay-amount dt,
+.order-id-label,
+.done-next h3,
+.submit-status-label,
+.track-section-label,
+.track-status-label,
+.track-fact-label {
+  font-size: var(--th-section-size);
+  font-weight: var(--th-section-weight);
+  line-height: var(--th-section-line);
+  letter-spacing: var(--th-tracking);
+  text-transform: none;
+  color: var(--ink-3);
+}
+
+/* ── Role 4: CTA ──────────────────────────────────────────────── */
+.th-cta,
+.btn.is-thai,
+.track-mode {
+  font-size: var(--th-cta-size);
+  font-weight: var(--th-cta-weight);
+  line-height: var(--th-cta-line);
+  letter-spacing: var(--th-tracking);
+  text-transform: none;
+}
+
+/* ── Role 5: Helper / meta ────────────────────────────────────── */
+.th-helper,
+.field-hint,
+.summary-note,
+.choice-desc,
+.qr-note,
+.pay-disclaimer,
+.upload-hint,
+.upload-sub,
+.submit-status-note,
+.cart-row-meta,
+.cart-row-unit,
+.cart-row-fee,
+.line-item-meta,
+.track-count,
+.track-item-meta,
+.track-step-desc,
+.track-status-note,
+.track-pending-note,
+.track-empty-items,
+.track-cancelled {
+  font-size: var(--th-helper-size);
+  font-weight: var(--th-helper-weight);
+  line-height: var(--th-helper-line);
+  letter-spacing: var(--th-tracking);
+  text-transform: none;
+}
+
+/* One muted tone, instead of secondary text drifting between two. */
+.th-helper,
+.field-hint,
+.summary-note,
+.choice-desc,
+.qr-note,
+.pay-disclaimer,
+.upload-hint,
+.upload-sub,
+.submit-status-note,
+.cart-row-meta,
+.cart-row-unit,
+.cart-row-fee,
+.line-item-meta,
+.track-count,
+.track-item-meta,
+.track-step-desc,
+.track-status-note,
+.track-pending-note,
+.track-empty-items {
+  color: var(--th-muted);
+}
+
+/* ── Structure, not type ──────────────────────────────────────────
+   Thai has no word spaces, so a label wraps mid-"word". These let a
+   control grow instead of clipping, and stop an unbreakable run from
+   widening a column. No size or tap target is reduced.
+   ──────────────────────────────────────────────────────────────── */
+.section-head-note {
+  margin: var(--s-2) 0 0;
+  max-width: 46ch;
+  text-wrap: pretty;
+}
+
+.order-id-label {
+  margin: 0 0 var(--s-2);
+}
+
+.btn.is-thai {
+  height: auto;
+  padding-top: var(--s-2);
+  padding-bottom: var(--s-2);
+  text-wrap: balance;
+}
+
+.track-mode {
+  height: auto;
+  min-height: var(--tap);
+  padding-top: var(--s-1);
+  padding-bottom: var(--s-1);
+  white-space: normal;
+}
+
+.summary-row dt,
+.kv dt,
+.kv dd,
+.choice-title,
+.choice-desc,
+.cart-row-meta,
+.cart-row-unit,
+.line-item-meta,
+.upload-filename,
+.upload-sub,
+.track-item-meta,
+.track-fact-label,
+.track-fact-value,
+.track-step-desc {
+  overflow-wrap: anywhere;
+}
+
+.action-bar-total.is-thai dt {
+  line-height: var(--th-section-line);
+}
+
+/* The tracking pill holds Thai on every page except the landing, which
+   keeps its English "Track order". Only the Thai ones drop the Latin
+   tracking. */
+.track-nav-btn.is-thai,
+.site-footer-link.is-thai {
+  letter-spacing: var(--th-tracking);
+  text-transform: none;
+}
+
+/* The 404 heading is an <h1> in the same block the empty states use. */
+.state h1 {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Header fit
+   ════════════════════════════════════════════════════════════════ */
+/* The tracking entry now reads "ติดตามคำสั่งซื้อ", which is wider than the
+   "Track order" it replaced, so the header row lost the slack that let the
+   campus tag sit beside the wordmark. That tag never actually fitted on a
+   phone anyway — with a two-digit cart badge it needs ~540px to print in
+   full, and below that it rendered as a truncated stub ("LKB.S…"). The
+   design already drops it at <=359px for the same reason; every screen it
+   appears on prints the same sub-brand in its own section eyebrow directly
+   below, so hiding it until it fits loses nothing. */
+@media (max-width: 539px) {
+  .uni-tag {
+    display: none;
   }
 }

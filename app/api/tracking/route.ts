@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const GENERIC_ERROR: TrackingSearchResult = {
   ok: false,
-  message: "We couldn't check your order right now. Please try again shortly."
+  message: "ไม่สามารถตรวจสอบคำสั่งซื้อได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง"
 };
 
 /**
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return json(
       {
         ok: false,
-        message: "Too many lookups. Please wait a moment and try again."
+        message: "ค้นหาบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่"
       },
       429
     );
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     payload = await request.json();
   } catch {
     return json(
-      { ok: false, message: "Enter your name or phone number." },
+      { ok: false, message: "กรุณากรอกชื่อ-นามสกุลหรือเบอร์โทรศัพท์" },
       400
     );
   }

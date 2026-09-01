@@ -150,7 +150,10 @@ describe("order service slip persistence", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.ok ? undefined : result.message).toContain("Product catalog");
+    // The customer sees a generic Thai retry message, never a backend detail.
+    expect(result.ok ? undefined : result.message).toBe(
+      "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
+    );
     expect(upload).not.toHaveBeenCalled();
     expect(persistOrder).not.toHaveBeenCalled();
     consoleError.mockRestore();

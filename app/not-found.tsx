@@ -20,8 +20,8 @@ export default function NotFound() {
           </Link>
         </div>
         <div className="header-right">
-          <Link className="track-nav-btn" href="/tracking">
-            Track order
+          <Link className="track-nav-btn is-thai" href="/tracking">
+            ติดตามคำสั่งซื้อ
           </Link>
         </div>
       </header>

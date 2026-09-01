@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         ok: false,
-        message: "Order request could not be verified."
+        message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
       } satisfies OrderSubmissionResult,
       { status: 403 }
     );
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         ok: false,
-        message: "The slip image must be 5 MB or smaller."
+        message: "ไฟล์มีขนาดใหญ่เกินไป กรุณาใช้รูปที่ไม่เกิน 5 MB"
       } satisfies OrderSubmissionResult,
       { status: 413 }
     );
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         ok: false,
-        message: "Order details could not be read."
+        message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
       } satisfies OrderSubmissionResult,
       { status: 400 }
     );
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         ok: false,
-        message: "Order details are required."
+        message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
       } satisfies OrderSubmissionResult,
       { status: 400 }
     );
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     return Response.json(
       {
         ok: false,
-        message: "Order details could not be read."
+        message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
       } satisfies OrderSubmissionResult,
       { status: 400 }
     );

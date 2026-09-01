@@ -67,8 +67,7 @@ export function TrackingView() {
     } catch {
       setState({
         kind: "error",
-        message:
-          "We couldn't check your order right now. Please try again shortly."
+        message: "ไม่สามารถตรวจสอบคำสั่งซื้อได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง"
       });
     }
   }
@@ -82,7 +81,7 @@ export function TrackingView() {
           </Link>
         </div>
         <Link className="cart-btn" href="/">
-          Shop
+          หน้าร้าน
         </Link>
       </header>
 
@@ -90,14 +89,13 @@ export function TrackingView() {
         <section className="step-section track-section">
           <div className="section-head">
             <div className="section-head-text">
-              <p className="eyebrow">Order tracking</p>
-              <h1 className="display-lg">Track your <span className="serif-accent">order</span></h1>
+              <p className="eyebrow">Tripleo.bkk</p>
+              <h1 className="display-lg">ติดตามคำสั่งซื้อ</h1>
             </div>
           </div>
 
           <p className="lede track-lede">
-            Enter the name or phone number you used at checkout. No account
-            needed.
+            กรอกชื่อ-นามสกุลหรือเบอร์โทรศัพท์ที่คุณใช้ตอนสั่งซื้อ
           </p>
 
           <form
@@ -110,7 +108,7 @@ export function TrackingView() {
             <div
               className="track-modes"
               role="radiogroup"
-              aria-label="Search by"
+              aria-label="ค้นหาด้วย"
             >
               <button
                 type="button"
@@ -119,7 +117,7 @@ export function TrackingView() {
                 className={`track-mode${isPhone ? " is-selected" : ""}`}
                 onClick={() => switchMode("phone")}
               >
-                Phone number
+                เบอร์โทรศัพท์
               </button>
               <button
                 type="button"
@@ -128,13 +126,13 @@ export function TrackingView() {
                 className={`track-mode${!isPhone ? " is-selected" : ""}`}
                 onClick={() => switchMode("name")}
               >
-                Full name
+                ชื่อ-นามสกุล
               </button>
             </div>
 
             <div className="field">
               <label className="field-label" htmlFor={inputId}>
-                {isPhone ? "Phone number" : "Full name"}
+                {isPhone ? "ค้นหาด้วยเบอร์โทรศัพท์" : "ค้นหาด้วยชื่อ-นามสกุล"}
               </label>
               <input
                 id={inputId}
@@ -149,18 +147,20 @@ export function TrackingView() {
                 maxLength={
                   isPhone ? MAX_TRACKING_PHONE_LENGTH : MAX_TRACKING_NAME_LENGTH
                 }
-                placeholder={isPhone ? "08X XXX XXXX" : "e.g. Nattapong S."}
+                placeholder={
+                  isPhone ? "08xxxxxxxx" : "กรอกชื่อและนามสกุล"
+                }
                 autoCapitalize={isPhone ? "none" : "words"}
               />
               <span className="field-hint">
                 {isPhone
-                  ? "Spaces and dashes are fine."
-                  : "Use the same spelling as your order."}
+                  ? "ใส่เว้นวรรคหรือขีดกลางได้"
+                  : "กรุณาสะกดให้ตรงกับตอนที่สั่งซื้อ"}
               </span>
             </div>
 
             <button
-              className="btn btn-primary btn-block"
+              className="btn btn-primary btn-block is-thai"
               type="submit"
               disabled={!value.trim() || state.kind === "loading"}
               aria-busy={state.kind === "loading"}
@@ -168,10 +168,10 @@ export function TrackingView() {
               {state.kind === "loading" ? (
                 <>
                   <span className="spinner" aria-hidden="true" />
-                  Checking
+                  กำลังค้นหา
                 </>
               ) : (
-                "Track order"
+                "ค้นหา"
               )}
             </button>
           </form>
@@ -184,14 +184,14 @@ export function TrackingView() {
             ) : null}
 
             {state.kind === "results" && state.orders.length === 0 ? (
-              <div className="state">
+              <div className="state is-thai">
                 <span className="state-mark" aria-hidden="true">
                   ?
                 </span>
-                <h3>No orders found</h3>
+                <h3>ไม่พบคำสั่งซื้อ</h3>
                 <p>
-                  We couldn&apos;t find an order matching that information.
-                  Please check your details and try again.
+                  ไม่พบคำสั่งซื้อที่ตรงกับข้อมูลนี้
+                  กรุณาตรวจสอบข้อมูลแล้วลองอีกครั้ง
                 </p>
               </div>
             ) : null}
@@ -199,8 +199,7 @@ export function TrackingView() {
             {state.kind === "results" && state.orders.length > 0 ? (
               <>
                 <p className="track-count">
-                  {state.orders.length} order
-                  {state.orders.length === 1 ? "" : "s"} found
+                  พบ {state.orders.length} คำสั่งซื้อ
                 </p>
                 <div className="track-list">
                   {state.orders.map((order) => (
@@ -216,7 +215,7 @@ export function TrackingView() {
       <footer className="site-footer">
         <span className="site-footer-brand">Tripleo.bkk</span>
         <span className="site-footer-note">
-          Premium university streetwear · Bangkok
+          เสื้อยืดสตรีทแวร์มหาวิทยาลัย · Bangkok
         </span>
       </footer>
     </main>
@@ -241,7 +240,7 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
 
       <div className="track-status-row">
         <div className="track-status-block">
-          <span className="track-status-label">Payment</span>
+          <span className="track-status-label">สถานะการชำระเงิน</span>
           <span className={`track-badge is-${paymentTone(order)}`}>
             {trackingPaymentLabels[order.paymentStatus]}
           </span>
@@ -250,7 +249,7 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
           </span>
         </div>
         <div className="track-status-block">
-          <span className="track-status-label">Order</span>
+          <span className="track-status-label">สถานะคำสั่งซื้อ</span>
           <span className={`track-badge is-${orderTone(order)}`}>
             {trackingOrderLabels[order.orderStatus]}
           </span>
@@ -259,8 +258,7 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
 
       {timeline.cancelled ? (
         <p className="track-cancelled">
-          This order was cancelled. Please contact us if you think this is a
-          mistake.
+          คำสั่งซื้อนี้ถูกยกเลิกแล้ว หากคิดว่าเป็นความผิดพลาด กรุณาติดต่อเรา
         </p>
       ) : (
         <ol className="track-timeline">
@@ -284,11 +282,11 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
 
       <div className="track-items">
         <span className="track-section-label">
-          Items ({order.itemCount})
+          รายการสินค้า ({order.itemCount} ชิ้น)
         </span>
         {order.items.length === 0 ? (
           <p className="track-empty-items">
-            Item details aren&apos;t available for this order.
+            ไม่มีรายละเอียดสินค้าสำหรับคำสั่งซื้อนี้
           </p>
         ) : (
           <ul className="track-item-list">
@@ -296,7 +294,7 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
               <li className="track-item" key={`${item.shirtColor}-${item.size}-${index}`}>
                 <span className="track-item-name">{item.shirtColor || "—"}</span>
                 <span className="track-item-meta">
-                  Size {item.size || "—"} × {item.quantity}
+                  ไซส์ {item.size || "—"} · จำนวน {item.quantity} ชิ้น
                 </span>
               </li>
             ))}
@@ -306,32 +304,32 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
 
       <div className="track-facts">
         <div className="track-fact">
-          <span className="track-fact-label">Delivery</span>
+          <span className="track-fact-label">วิธีรับสินค้า</span>
           <span className="track-fact-value">
-            {shipping ? "Shipping" : "Pickup"}
+            {shipping ? "จัดส่งพัสดุ" : "รับสินค้าด้วยตนเอง"}
           </span>
         </div>
         <div className="track-fact">
-          <span className="track-fact-label">Total</span>
+          <span className="track-fact-label">ยอดรวมทั้งหมด</span>
           <span className="track-fact-value">{formatThb(order.totalThb)}</span>
         </div>
       </div>
 
       {shipping ? (
         <div className="track-shipping">
-          <span className="track-section-label">Shipping</span>
+          <span className="track-section-label">ข้อมูลการจัดส่ง</span>
           {order.trackingNumber ? (
             <>
               {order.shippingProvider ? (
                 <div className="track-fact">
-                  <span className="track-fact-label">Provider</span>
+                  <span className="track-fact-label">บริษัทขนส่ง</span>
                   <span className="track-fact-value">
                     {order.shippingProvider}
                   </span>
                 </div>
               ) : null}
               <div className="track-fact">
-                <span className="track-fact-label">Tracking no.</span>
+                <span className="track-fact-label">หมายเลขติดตามพัสดุ</span>
                 <span className="track-fact-value track-tracking-number">
                   {order.trackingNumber}
                 </span>
@@ -339,7 +337,8 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
             </>
           ) : (
             <p className="track-pending-note">
-              Tracking number will appear once your order is shipped.
+              ยังไม่มีหมายเลขติดตามพัสดุ
+              จะแสดงเมื่อคำสั่งซื้อถูกจัดส่งแล้ว
             </p>
           )}
         </div>

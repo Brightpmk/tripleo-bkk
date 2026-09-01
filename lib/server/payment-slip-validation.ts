@@ -17,26 +17,35 @@ export async function validatePaymentSlipUpload(
   file: File | null
 ): Promise<PaymentSlipValidationResult> {
   if (!file) {
-    return { ok: false, message: "Payment slip is required." };
+    return { ok: false, message: "กรุณาอัปโหลดสลิปการชำระเงิน" };
   }
 
   if (file.size <= 0) {
-    return { ok: false, message: "Payment slip image is empty." };
+    return { ok: false, message: "ไฟล์สลิปว่างเปล่า กรุณาเลือกรูปใหม่" };
   }
 
   if (file.size > MAX_SLIP_FILE_SIZE_BYTES) {
-    return { ok: false, message: "The slip image must be 5 MB or smaller." };
+    return {
+      ok: false,
+      message: "ไฟล์มีขนาดใหญ่เกินไป กรุณาใช้รูปที่ไม่เกิน 5 MB"
+    };
   }
 
   if (!acceptedSlipMimeTypes.includes(file.type)) {
-    return { ok: false, message: "Upload a JPG, PNG, or WEBP image." };
+    return {
+      ok: false,
+      message: "ไฟล์ไม่รองรับ กรุณาอัปโหลดรูป JPG, PNG หรือ WEBP"
+    };
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const detected = detectImageType(buffer);
 
   if (!detected || detected.mimeType !== file.type) {
-    return { ok: false, message: "The selected slip image could not be verified." };
+    return {
+      ok: false,
+      message: "ไม่สามารถตรวจสอบไฟล์สลิปนี้ได้ กรุณาเลือกรูปใหม่"
+    };
   }
 
   return {

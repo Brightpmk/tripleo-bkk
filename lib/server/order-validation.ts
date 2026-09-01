@@ -38,11 +38,11 @@ export function validateOrderSubmission(
   const university = getUniversityById(request.universityId);
 
   if (!university) {
-    fieldErrors.universityId = "Select a supported university.";
+    fieldErrors.universityId = "กรุณาเลือกมหาวิทยาลัยที่เปิดจำหน่าย";
   }
 
   if (!Array.isArray(request.items) || request.items.length === 0) {
-    fieldErrors.items = "Cart must contain at least one item.";
+    fieldErrors.items = "กรุณาเพิ่มสินค้าอย่างน้อย 1 ชิ้นลงในตะกร้า";
   }
 
   const fullName = normalizeString(request.checkout?.fullName);
@@ -51,29 +51,29 @@ export function validateOrderSubmission(
   const shippingAddress = normalizeString(request.checkout?.shippingAddress);
 
   if (!fullName) {
-    fieldErrors.fullName = "Full name is required.";
+    fieldErrors.fullName = "กรุณากรอกชื่อ-นามสกุล";
   }
 
   if (!phone) {
-    fieldErrors.phone = "Phone number is required.";
+    fieldErrors.phone = "กรุณากรอกเบอร์โทรศัพท์";
   }
 
   if (!isDeliveryMethod(deliveryMethod)) {
-    fieldErrors.deliveryMethod = "Select pickup or shipping.";
+    fieldErrors.deliveryMethod = "กรุณาเลือกวิธีรับสินค้า";
   } else if (university && !isDeliveryMethodAllowed(university.id, deliveryMethod)) {
     fieldErrors.deliveryMethod =
       university.id === "bangmod"
-        ? "Select pickup or shipping."
-        : "Delivery is the only available option for this university.";
+        ? "กรุณาเลือกวิธีรับสินค้า"
+        : "มหาวิทยาลัยนี้รองรับเฉพาะการจัดส่งเท่านั้น";
   }
 
   if (deliveryMethod === "shipping" && !shippingAddress) {
-    fieldErrors.shippingAddress = "Shipping address is required.";
+    fieldErrors.shippingAddress = "กรุณากรอกที่อยู่สำหรับจัดส่ง";
   }
 
 
   if (request.slipSelected !== true) {
-    fieldErrors.slipSelected = "Payment slip must be selected.";
+    fieldErrors.slipSelected = "กรุณาอัปโหลดสลิปการชำระเงิน";
   }
 
   const items: CartItem[] = [];
@@ -85,7 +85,7 @@ export function validateOrderSubmission(
       const quantity = Math.floor(Number(item.quantity));
 
       if (!product) {
-        fieldErrors[`${itemPrefix}.productId`] = "Product is not available.";
+        fieldErrors[`${itemPrefix}.productId`] = "สินค้านี้ไม่พร้อมจำหน่ายแล้ว";
         return;
       }
 
@@ -95,7 +95,7 @@ export function validateOrderSubmission(
       }
 
       if (!isAvailableSize(product, item.size)) {
-        fieldErrors[`${itemPrefix}.size`] = "Select a supported size.";
+        fieldErrors[`${itemPrefix}.size`] = "กรุณาเลือกไซส์ที่มีจำหน่าย";
       }
 
       // Canonical price: product base price plus the surcharge this server
@@ -110,12 +110,12 @@ export function validateOrderSubmission(
         item.displayedUnitPriceThb !== unitPriceThb
       ) {
         fieldErrors[`${itemPrefix}.price`] =
-          "Product price changed. Please review your cart and try again.";
+          "ราคาสินค้ามีการเปลี่ยนแปลง กรุณาตรวจสอบตะกร้าอีกครั้ง";
       }
 
       if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) {
         fieldErrors[`${itemPrefix}.quantity`] =
-          "Quantity must be between 1 and 20.";
+          "จำนวนต้องอยู่ระหว่าง 1 ถึง 20 ชิ้น";
       }
 
       if (
@@ -152,8 +152,8 @@ export function validateOrderSubmission(
     return {
       ok: false,
       message: Object.keys(fieldErrors).some((field) => field.endsWith(".price"))
-        ? "Product details changed. Please review your cart and try again."
-        : "Please review the highlighted order details.",
+        ? "ข้อมูลสินค้ามีการเปลี่ยนแปลง กรุณาตรวจสอบตะกร้าอีกครั้ง"
+        : "กรุณาตรวจสอบข้อมูลที่ทำเครื่องหมายไว้อีกครั้ง",
       fieldErrors
     };
   }

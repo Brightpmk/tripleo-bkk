@@ -54,11 +54,11 @@ export function validateTrackingQuery(
   rawValue: unknown
 ): TrackingQueryValidation {
   if (mode !== "name" && mode !== "phone") {
-    return { ok: false, message: "Choose whether to search by name or phone." };
+    return { ok: false, message: "กรุณาเลือกค้นหาด้วยชื่อ-นามสกุลหรือเบอร์โทรศัพท์" };
   }
 
   if (typeof rawValue !== "string") {
-    return { ok: false, message: "Enter your name or phone number." };
+    return { ok: false, message: "กรุณากรอกชื่อ-นามสกุลหรือเบอร์โทรศัพท์" };
   }
 
   const trimmed = rawValue.trim();
@@ -68,8 +68,8 @@ export function validateTrackingQuery(
       ok: false,
       message:
         mode === "name"
-          ? "Enter the full name used on the order."
-          : "Enter the phone number used on the order."
+          ? "กรุณากรอกชื่อ-นามสกุลที่ใช้ตอนสั่งซื้อ"
+          : "กรุณากรอกเบอร์โทรศัพท์ที่ใช้ตอนสั่งซื้อ"
     };
   }
 
@@ -77,14 +77,17 @@ export function validateTrackingQuery(
     if (trimmed.length > MAX_TRACKING_NAME_LENGTH) {
       return {
         ok: false,
-        message: `Name must be ${MAX_TRACKING_NAME_LENGTH} characters or fewer.`
+        message: `ชื่อ-นามสกุลต้องไม่เกิน ${MAX_TRACKING_NAME_LENGTH} ตัวอักษร`
       };
     }
 
     const normalized = normalizeTrackingName(trimmed);
 
     if (normalized.length < MIN_TRACKING_NAME_LENGTH) {
-      return { ok: false, message: "Enter the full name used on the order." };
+      return {
+        ok: false,
+        message: "กรุณากรอกชื่อ-นามสกุลที่ใช้ตอนสั่งซื้อ"
+      };
     }
 
     return { ok: true, mode, normalized };
@@ -93,14 +96,17 @@ export function validateTrackingQuery(
   if (trimmed.length > MAX_TRACKING_PHONE_LENGTH) {
     return {
       ok: false,
-      message: `Phone number must be ${MAX_TRACKING_PHONE_LENGTH} characters or fewer.`
+      message: `เบอร์โทรศัพท์ต้องไม่เกิน ${MAX_TRACKING_PHONE_LENGTH} ตัวอักษร`
     };
   }
 
   const normalized = normalizeTrackingPhone(trimmed);
 
   if (normalized.length < MIN_TRACKING_PHONE_DIGITS) {
-    return { ok: false, message: "Enter the full phone number used on the order." };
+    return {
+      ok: false,
+      message: "กรุณากรอกเบอร์โทรศัพท์ให้ครบถ้วน"
+    };
   }
 
   return { ok: true, mode, normalized };
@@ -140,26 +146,30 @@ export type TrackingSearchResult =
 
 /* ── Customer-facing status language ────────────────────────────── */
 
+/**
+ * Thai labels for the stored statuses. The stored values themselves
+ * ("pending", "new", …) are untouched — this is only how they read.
+ */
 export const trackingPaymentLabels: Record<PaymentStatus, string> = {
-  pending: "Awaiting verification",
-  verified: "Payment confirmed",
-  review_required: "Being reviewed",
-  rejected: "Payment issue"
+  pending: "รอตรวจสอบการชำระเงิน",
+  verified: "ชำระเงินแล้ว",
+  review_required: "กำลังตรวจสอบเพิ่มเติม",
+  rejected: "การชำระเงินมีปัญหา"
 };
 
 export const trackingPaymentNotes: Record<PaymentStatus, string> = {
-  pending: "We have your slip and will confirm it shortly.",
-  verified: "Your payment has been confirmed by our team.",
-  review_required: "We need to take a closer look at your payment slip.",
-  rejected: "There was a problem with this payment. Please contact us."
+  pending: "เราได้รับสลิปของคุณแล้ว และกำลังตรวจสอบ",
+  verified: "ทีมงานยืนยันการชำระเงินของคุณเรียบร้อยแล้ว",
+  review_required: "เราต้องตรวจสอบสลิปของคุณเพิ่มเติมอีกเล็กน้อย",
+  rejected: "การชำระเงินนี้มีปัญหา กรุณาติดต่อเรา"
 };
 
 export const trackingOrderLabels: Record<AdminOrderStatus, string> = {
-  new: "Order received",
-  preparing: "Preparing",
-  shipped: "Shipped",
-  completed: "Completed",
-  cancelled: "Cancelled"
+  new: "รับคำสั่งซื้อแล้ว",
+  preparing: "กำลังเตรียมสินค้า",
+  shipped: "จัดส่งแล้ว",
+  completed: "สำเร็จ",
+  cancelled: "ยกเลิกแล้ว"
 };
 
 /* ── Timeline ───────────────────────────────────────────────────── */
@@ -174,17 +184,17 @@ export const trackingStages = [
 export type TrackingStage = (typeof trackingStages)[number];
 
 export const trackingStageLabels: Record<TrackingStage, string> = {
-  new: "Order received",
-  preparing: "Preparing",
-  shipped: "Shipped",
-  completed: "Completed"
+  new: "รับคำสั่งซื้อแล้ว",
+  preparing: "กำลังเตรียมสินค้า",
+  shipped: "จัดส่งแล้ว",
+  completed: "สำเร็จ"
 };
 
 export const trackingStageDescriptions: Record<TrackingStage, string> = {
-  new: "We have your order.",
-  preparing: "Your shirts are being packed.",
-  shipped: "On the way to you.",
-  completed: "Order complete."
+  new: "เราได้รับคำสั่งซื้อของคุณแล้ว",
+  preparing: "กำลังแพ็กเสื้อของคุณ",
+  shipped: "พัสดุกำลังเดินทางไปหาคุณ",
+  completed: "คำสั่งซื้อเสร็จสมบูรณ์"
 };
 
 export type TrackingTimelineStep = {

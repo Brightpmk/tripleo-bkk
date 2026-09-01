@@ -14,14 +14,14 @@ export function validateSlipFile(file: Pick<File, "size" | "type">) {
   if (!acceptedSlipMimeTypes.includes(file.type)) {
     return {
       ok: false,
-      message: "Upload a JPG, PNG, or WEBP image."
+      message: "ไฟล์ไม่รองรับ กรุณาอัปโหลดรูป JPG, PNG หรือ WEBP"
     } satisfies SlipValidationResult;
   }
 
   if (file.size > MAX_SLIP_FILE_SIZE_BYTES) {
     return {
       ok: false,
-      message: "The slip image must be 5 MB or smaller."
+      message: "ไฟล์มีขนาดใหญ่เกินไป กรุณาใช้รูปที่ไม่เกิน 5 MB"
     } satisfies SlipValidationResult;
   }
 

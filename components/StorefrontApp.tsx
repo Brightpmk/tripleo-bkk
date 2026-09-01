@@ -29,7 +29,8 @@ import {
 import { formatThb } from "@/lib/format";
 import {
   type CheckoutDetails,
-  type ConfirmedOrder
+  type ConfirmedOrder,
+  type PaymentStatus
 } from "@/lib/orders";
 import type { OrderSubmissionResult } from "@/lib/order-submission";
 import {
@@ -69,9 +70,16 @@ const MAX_LINE_QUANTITY = 20;
 
 type SubmitStage = "idle" | "uploading" | "confirming";
 
+const paymentStatusLabels: Record<PaymentStatus, string> = {
+  pending: "กำลังรอตรวจสอบการชำระเงิน",
+  verified: "ยืนยันการชำระเงินแล้ว",
+  review_required: "กำลังตรวจสอบเพิ่มเติม",
+  rejected: "การชำระเงินมีปัญหา กรุณาติดต่อเรา"
+};
+
 const submitStageLabels: Record<Exclude<SubmitStage, "idle">, string> = {
-  uploading: "Sending your payment slip",
-  confirming: "Confirming your order"
+  uploading: "กำลังส่งสลิปการชำระเงิน",
+  confirming: "กำลังยืนยันคำสั่งซื้อ"
 };
 
 const defaultCheckout: CheckoutDetails = {
@@ -278,25 +286,25 @@ export function StorefrontApp({
     const nextErrors: Record<string, string> = {};
 
     if (!checkout.fullName.trim()) {
-      nextErrors.fullName = "Full name is required.";
+      nextErrors.fullName = "กรุณากรอกชื่อ-นามสกุล";
     }
 
     if (!checkout.phone.trim()) {
-      nextErrors.phone = "Phone number is required.";
+      nextErrors.phone = "กรุณากรอกเบอร์โทรศัพท์";
     }
 
     if (!isDeliveryMethodAllowed(universityId, checkout.deliveryMethod)) {
       nextErrors.deliveryMethod =
         universityId === "bangmod"
-          ? "Select pickup or shipping."
-          : "Delivery is the only available option for this university.";
+          ? "กรุณาเลือกวิธีรับสินค้า"
+          : "มหาวิทยาลัยนี้รองรับเฉพาะการจัดส่งเท่านั้น";
     }
 
     if (
       checkout.deliveryMethod === "shipping" &&
       !checkout.shippingAddress.trim()
     ) {
-      nextErrors.shippingAddress = "Shipping address is required.";
+      nextErrors.shippingAddress = "กรุณากรอกที่อยู่สำหรับจัดส่ง";
     }
 
     setFormErrors(nextErrors);
@@ -413,9 +421,7 @@ export function StorefrontApp({
       setSubmissionKey(createSubmissionKey());
       setStep("success");
     } catch {
-      setSubmissionError(
-        "We could not save your order right now. Please try again in a moment."
-      );
+      setSubmissionError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
     } finally {
       setIsSubmitting(false);
       setSubmitStage("idle");
@@ -451,8 +457,8 @@ export function StorefrontApp({
         </div>
 
         <div className="header-right">
-          <Link className="track-nav-btn" href="/tracking">
-            Track order
+          <Link className="track-nav-btn is-thai" href="/tracking">
+            ติดตามคำสั่งซื้อ
           </Link>
           {step !== "success" ? (
             <button
@@ -806,8 +812,7 @@ function ShopSection({
                     </div>
                     {hasSurchargedSize ? (
                       <p className="size-note">
-                        3XL and above add {formatThb(SIZE_SURCHARGE_THB)} per
-                        shirt.
+                        Size 3XL ขึ้นไปเพิ่มราคา {formatThb(SIZE_SURCHARGE_THB)}
                       </p>
                     ) : null}
                   </div>
@@ -871,29 +876,32 @@ function CartSection({
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">Your <span className="serif-accent">Cart</span></h2>
+          <p className="section-head-note">
+            ตรวจสอบรายการสินค้าก่อนดำเนินการต่อ
+          </p>
         </div>
         {items.length > 0 ? (
           <div className="section-head-actions">
             <button
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm is-thai"
               type="button"
               onClick={onShop}
             >
-              Add more items
+              เลือกสินค้าเพิ่ม
             </button>
           </div>
         ) : null}
       </div>
 
       {items.length === 0 ? (
-        <div className="state">
+        <div className="state is-thai">
           <span className="state-mark" aria-hidden="true">
             ○
           </span>
-          <h3>Your cart is empty</h3>
-          <p>Browse the collection and add a shirt to get started.</p>
-          <button className="btn btn-primary" type="button" onClick={onShop}>
-            Browse shirts
+          <h3>ตะกร้าของคุณยังว่าง</h3>
+          <p>เลือกดูคอลเลกชันแล้วเพิ่มเสื้อที่ถูกใจลงตะกร้าได้เลย</p>
+          <button className="btn btn-primary is-thai" type="button" onClick={onShop}>
+            เลือกดูสินค้า
           </button>
         </div>
       ) : (
@@ -913,14 +921,14 @@ function CartSection({
                 <div className="cart-row-main">
                   <span className="cart-row-name">{item.productName}</span>
                   <span className="cart-row-meta">
-                    {item.colorName} · Size {item.size}
+                    {item.colorName} · ไซส์ {item.size}
                   </span>
                   <span className="cart-row-unit">
-                    {formatThb(item.unitPriceThb)} each
+                    {formatThb(item.unitPriceThb)} ต่อชิ้น
                     {item.sizeSurchargeThb > 0 ? (
                       <span className="cart-row-fee">
                         {formatThb(item.basePriceThb)} +{" "}
-                        {formatThb(item.sizeSurchargeThb)} size {item.size}
+                        {formatThb(item.sizeSurchargeThb)} (ไซส์ {item.size})
                       </span>
                     ) : null}
                   </span>
@@ -930,7 +938,7 @@ function CartSection({
                   className="icon-btn cart-row-remove"
                   type="button"
                   onClick={() => onRemove(item.lineId)}
-                  aria-label={`Remove ${item.productName}, size ${item.size}, from cart`}
+                  aria-label={`ลบ ${item.productName} ไซส์ ${item.size} ออกจากตะกร้า`}
                 >
                   ×
                 </button>
@@ -939,7 +947,7 @@ function CartSection({
                   <QuantityStepper
                     value={item.quantity}
                     min={1}
-                    label={`Quantity of ${item.productName}, size ${item.size}`}
+                    label={`จำนวนของ ${item.productName} ไซส์ ${item.size}`}
                     onChange={(next) => onQuantityChange(item.lineId, next)}
                   />
                   <span className="cart-row-total">
@@ -951,37 +959,39 @@ function CartSection({
           </div>
 
           <div className="summary">
-            <h3 className="summary-title">Cart summary</h3>
+            <h3 className="summary-title">สรุปตะกร้า</h3>
             <dl>
               <div className="summary-row">
-                <dt>Items</dt>
-                <dd>{items.reduce((count, item) => count + item.quantity, 0)}</dd>
+                <dt>จำนวนสินค้า</dt>
+                <dd>
+                  {items.reduce((count, item) => count + item.quantity, 0)} ชิ้น
+                </dd>
               </div>
               <div className="summary-row is-total">
-                <dt>Subtotal</dt>
+                <dt>ยอดรวมสินค้า</dt>
                 <dd>{formatThb(subtotal)}</dd>
               </div>
             </dl>
             <p className="summary-note">
               {university.id === "bangmod"
-                ? "Delivery is chosen on the next step. Pickup is free, or shipping is 50 THB (1–10 shirts, +10 THB per extra shirt)."
-                : "Delivery is chosen on the next step. Shipping is 50 THB (1–10 shirts, +10 THB per extra shirt)."}
+                ? "เลือกวิธีรับสินค้าในขั้นตอนถัดไป · รับสินค้าด้วยตนเองไม่มีค่าจัดส่ง หรือจัดส่ง 50 THB (1–10 ตัว, เกินจากนั้น +10 THB ต่อตัว)"
+                : "เลือกวิธีรับสินค้าในขั้นตอนถัดไป · ค่าจัดส่ง 50 THB (1–10 ตัว, เกินจากนั้น +10 THB ต่อตัว)"}
             </p>
           </div>
 
           <div className="action-bar">
             <div className="action-bar-inner">
-              <dl className="action-bar-total">
-                <dt>Subtotal</dt>
+              <dl className="action-bar-total is-thai">
+                <dt>ยอดรวมสินค้า</dt>
                 <dd>{formatThb(subtotal)}</dd>
               </dl>
               <div className="action-bar-row">
                 <button
-                  className="btn btn-primary"
+                  className="btn btn-primary is-thai"
                   type="button"
                   onClick={onContinue}
                 >
-                  Checkout
+                  ดำเนินการสั่งซื้อ
                 </button>
               </div>
             </div>
@@ -1022,6 +1032,9 @@ function CheckoutSection({
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">Your <span className="serif-accent">Details</span></h2>
+          <p className="section-head-note">
+            กรอกข้อมูลสำหรับติดต่อและการรับสินค้า
+          </p>
         </div>
       </div>
 
@@ -1036,12 +1049,12 @@ function CheckoutSection({
           }}
         >
           <div className="form-block">
-            <h3 className="form-block-title">Contact</h3>
+            <h3 className="form-block-title">ข้อมูลติดต่อ</h3>
 
             <div className="field-grid">
               <div className="field">
                 <label className="field-label" htmlFor="checkout-name">
-                  Full name
+                  ชื่อ-นามสกุล
                 </label>
                 <input
                   id="checkout-name"
@@ -1050,7 +1063,7 @@ function CheckoutSection({
                   autoComplete="name"
                   autoCapitalize="words"
                   enterKeyHint="next"
-                  placeholder="e.g. Nattapong S."
+                  placeholder="กรอกชื่อและนามสกุล"
                   value={checkout.fullName}
                   onChange={(event) =>
                     onChange({ ...checkout, fullName: event.target.value })
@@ -1069,7 +1082,7 @@ function CheckoutSection({
 
               <div className="field">
                 <label className="field-label" htmlFor="checkout-phone">
-                  Phone number
+                  เบอร์โทรศัพท์
                 </label>
                 <input
                   id="checkout-phone"
@@ -1079,7 +1092,7 @@ function CheckoutSection({
                   inputMode="tel"
                   autoComplete="tel"
                   enterKeyHint="next"
-                  placeholder="08X XXX XXXX"
+                  placeholder="08xxxxxxxx"
                   value={checkout.phone}
                   onChange={(event) =>
                     onChange({ ...checkout, phone: event.target.value })
@@ -1103,10 +1116,10 @@ function CheckoutSection({
           </div>
 
           <div className="form-block">
-            <h3 className="form-block-title">Delivery</h3>
+            <h3 className="form-block-title">วิธีรับสินค้า</h3>
 
             <fieldset>
-              <legend className="vh">Choose a delivery method</legend>
+              <legend className="vh">เลือกวิธีรับสินค้า</legend>
               <div className="choice-list">
                 {availableDeliveryMethods.map((method) => {
                   const selected = checkout.deliveryMethod === method;
@@ -1129,18 +1142,18 @@ function CheckoutSection({
                       <span className="choice-body">
                         <span className="choice-head">
                           <span className="choice-title">
-                            {method === "pickup" ? "University pickup" : "Shipping"}
+                            {method === "pickup" ? "รับสินค้าด้วยตนเอง" : "จัดส่งพัสดุ"}
                           </span>
                           <span className="choice-price">
                             {method === "pickup"
-                              ? "Free"
+                              ? "ไม่มีค่าจัดส่ง"
                               : `+${formatThb(shippingFeePreview)}`}
                           </span>
                         </span>
                         <span className="choice-desc">
                           {method === "pickup"
                             ? `รับสินค้าด้วยตนเองที่ ${university.shortName}`
-                            : "จัดส่งพัสดุ (สั่งเกิน 10 ตัวขึ้นไป +10 บาท/ตัว)"}
+                            : "จัดส่งพัสดุ หากเกิน10ตัวจะมีการ +10 THB ต่อตัว"}
                         </span>
                       </span>
                     </label>
@@ -1158,7 +1171,7 @@ function CheckoutSection({
             {checkout.deliveryMethod === "shipping" ? (
               <div className="field">
                 <label className="field-label" htmlFor="checkout-address">
-                  Shipping address
+                  ที่อยู่สำหรับจัดส่ง
                 </label>
                 <textarea
                   id="checkout-address"
@@ -1173,44 +1186,40 @@ function CheckoutSection({
                   }
                   aria-invalid={Boolean(errors.shippingAddress)}
                   aria-describedby={
-                    errors.shippingAddress
-                      ? "checkout-address-error"
-                      : "checkout-address-hint"
+                    errors.shippingAddress ? "checkout-address-error" : undefined
                   }
                   placeholder={"บ้านเลขที่, ซอย/ถนน, แขวง/ตำบล\nเขต/อำเภอ, จังหวัด, รหัสไปรษณีย์"}
                 />
+                {/* aria-describedby above names this id, so it must exist
+                    whenever the field is invalid. */}
                 {errors.shippingAddress ? (
                   <span className="field-error" id="checkout-address-error">
                     {errors.shippingAddress}
                   </span>
-                ) : (
-                  <span className="field-hint" id="checkout-address-hint">
-                    Include the postcode so delivery isn&apos;t delayed.
-                  </span>
-                )}
+                ) : null}
               </div>
             ) : null}
           </div>
         </form>
 
-        <aside className="checkout-aside" aria-label="Order totals">
+        <aside className="checkout-aside" aria-label="สรุปยอดคำสั่งซื้อ">
           <TotalsSummary totals={totals} />
         </aside>
       </div>
 
       <div className="action-bar">
         <div className="action-bar-inner">
-          <dl className="action-bar-total">
-            <dt>Total</dt>
+          <dl className="action-bar-total is-thai">
+            <dt>ยอดรวมทั้งหมด</dt>
             <dd>{formatThb(totals.finalTotalThb)}</dd>
           </dl>
           <div className="action-bar-row">
             <button
-              className="btn btn-primary"
+              className="btn btn-primary is-thai"
               type="submit"
               form="checkout-form"
             >
-              Continue to payment
+              ดำเนินการต่อ
             </button>
           </div>
         </div>
@@ -1249,11 +1258,14 @@ function PaymentSection({
         <div className="section-head-text">
           <p className="eyebrow">Payment</p>
           <h2 className="display-lg">Transfer &amp; <span className="serif-accent">Upload</span></h2>
+          <p className="section-head-note">
+            โอนเงินตามยอดด้านล่าง แล้วอัปโหลดสลิปเพื่อยืนยัน
+          </p>
         </div>
       </div>
 
       <dl className="pay-amount">
-        <dt>Amount due</dt>
+        <dt>ยอดที่ต้องชำระ</dt>
         <dd>{formatThb(finalTotalThb)}</dd>
       </dl>
 
@@ -1271,7 +1283,7 @@ function PaymentSection({
             />
           </div>
           <p className="qr-payee">
-            <span className="vh">Payee: </span>
+            <span className="vh">ชื่อบัญชี: </span>
             นาย กรวิวัฒน์ แจ้งกระจ่าง · xxx-x-x1113-x
           </p>
           <a
@@ -1280,31 +1292,32 @@ function PaymentSection({
             target="_blank"
             rel="noopener noreferrer"
           >
-            Open full size to save
+            เปิดรูปขนาดเต็มเพื่อบันทึก
           </a>
           <p className="qr-note">
-            Scan with any Thai banking app, or save this image and use your
-            bank&apos;s scan-from-gallery option.
+            สแกน QR Code เพื่อชำระเงินด้วยแอปธนาคารใดก็ได้ หรือบันทึกรูปนี้ไว้
+            แล้วใช้เมนูสแกนจากคลังภาพในแอปธนาคารของคุณ
           </p>
         </div>
 
         <div>
-          <h3 className="pay-steps-title">How to pay</h3>
+          <h3 className="pay-steps-title">วิธีชำระเงิน</h3>
           <ol className="pay-steps">
-            <li>Transfer exactly {formatThb(finalTotalThb)} using the QR code.</li>
-            <li>Save the transfer confirmation screenshot.</li>
-            <li>Upload that slip below.</li>
-            <li>Review and confirm your order.</li>
+            <li>สแกน QR Code แล้วโอนเงินยอด {formatThb(finalTotalThb)}</li>
+            <li>บันทึกภาพสลิปยืนยันการโอนเงิน</li>
+            <li>อัปโหลดสลิปด้านล่างนี้</li>
+            <li>ตรวจสอบและยืนยันคำสั่งซื้อ</li>
           </ol>
           <p className="pay-disclaimer">
-            Staff verify every slip manually before an order is processed. Keep
-            the original screenshot until your order is confirmed.
+            การอัปโหลดสลิปยังไม่ถือว่าชำระเงินสำเร็จ
+            ทีมงานจะตรวจสอบสลิปทุกใบด้วยตนเองก่อนดำเนินการ
+            กรุณาเก็บภาพสลิปต้นฉบับไว้จนกว่าคำสั่งซื้อจะได้รับการยืนยัน
           </p>
         </div>
       </div>
 
       <div className="upload-block">
-        <h3 className="pay-steps-title">Payment slip</h3>
+        <h3 className="pay-steps-title">สลิปการชำระเงิน</h3>
 
         <label
           className={`upload${slipFile ? " has-file" : ""}${slipOptimizing ? " is-busy" : ""
@@ -1313,23 +1326,27 @@ function PaymentSection({
           {slipOptimizing ? (
             <>
               <span className="spinner" aria-hidden="true" />
-              <span className="upload-title">Preparing your slip…</span>
-              <span className="upload-hint">This keeps checkout fast.</span>
+              <span className="upload-title">กำลังเตรียมสลิป…</span>
+              <span className="upload-hint">
+                ย่อขนาดรูปเพื่อให้อัปโหลดได้เร็วขึ้น
+              </span>
             </>
           ) : slipFile ? (
             <>
               <span className="upload-thumb">
                 {slipPreviewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={slipPreviewUrl} alt="Payment slip preview" />
+                  <img src={slipPreviewUrl} alt="ตัวอย่างสลิปการชำระเงิน" />
                 ) : null}
               </span>
               <span className="upload-meta">
-                <span className="upload-filename">{slipFile.name}</span>
+                <span className="upload-filename">
+                  เลือกสลิปเรียบร้อยแล้ว · {slipFile.name}
+                </span>
                 <span className="upload-sub">
                   {slipSavedFromBytes > 0
-                    ? `${formatBytes(slipSavedFromBytes)} → ${formatBytes(slipFile.size)} · Tap to choose another`
-                    : `${formatBytes(slipFile.size)} · Tap to choose another`}
+                    ? `${formatBytes(slipSavedFromBytes)} → ${formatBytes(slipFile.size)} · แตะเพื่อเปลี่ยนสลิป`
+                    : `${formatBytes(slipFile.size)} · แตะเพื่อเปลี่ยนสลิป`}
                 </span>
               </span>
             </>
@@ -1338,8 +1355,10 @@ function PaymentSection({
               <span className="upload-mark" aria-hidden="true">
                 ↑
               </span>
-              <span className="upload-title">Upload payment slip</span>
-              <span className="upload-hint">JPG, PNG or WEBP · max 5 MB</span>
+              <span className="upload-title">อัปโหลดสลิปการชำระเงิน</span>
+              <span className="upload-hint">
+                แตะเพื่อเลือกรูปสลิป · JPG, PNG หรือ WEBP · ไม่เกิน 5 MB
+              </span>
             </>
           )}
           <input
@@ -1357,11 +1376,11 @@ function PaymentSection({
         {slipFile ? (
           <div className="upload-actions">
             <button
-              className="btn btn-quiet"
+              className="btn btn-quiet is-thai"
               type="button"
               onClick={() => onSlipChange(null)}
             >
-              Remove slip
+              ลบสลิป
             </button>
           </div>
         ) : null}
@@ -1375,25 +1394,25 @@ function PaymentSection({
 
       <div className="action-bar">
         <div className="action-bar-inner">
-          <dl className="action-bar-total">
-            <dt>Amount due</dt>
+          <dl className="action-bar-total is-thai">
+            <dt>ยอดที่ต้องชำระ</dt>
             <dd>{formatThb(finalTotalThb)}</dd>
           </dl>
           <div className="action-bar-row">
             <button
-              className="btn btn-secondary"
+              className="btn btn-secondary is-thai"
               type="button"
               onClick={onBack}
             >
-              Back
+              ย้อนกลับ
             </button>
             <button
-              className="btn btn-primary"
+              className="btn btn-primary is-thai"
               disabled={!slipFile || slipOptimizing}
               type="button"
               onClick={onContinue}
             >
-              Review order
+              ตรวจสอบคำสั่งซื้อ
             </button>
           </div>
         </div>
@@ -1438,6 +1457,9 @@ function ReviewSection({
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">Review <span className="serif-accent">Order</span></h2>
+          <p className="section-head-note">
+            ตรวจสอบข้อมูลทั้งหมดก่อนยืนยันคำสั่งซื้อ
+          </p>
         </div>
       </div>
 
@@ -1445,28 +1467,33 @@ function ReviewSection({
 
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">Delivery details</span>
+          <span className="panel-title">ข้อมูลผู้สั่งซื้อ</span>
         </div>
         <dl className="panel-body">
           <div className="kv">
-            <dt>Name</dt>
+            <dt>ชื่อ-นามสกุล</dt>
             <dd>{checkout.fullName}</dd>
           </div>
           <div className="kv">
-            <dt>Phone</dt>
+            <dt>เบอร์โทรศัพท์</dt>
             <dd>{checkout.phone}</dd>
           </div>
           <div className="kv">
-            <dt>Method</dt>
+            <dt>มหาวิทยาลัย</dt>
+            <dd>{university.shortName}</dd>
+          </div>
+          <div className="kv">
+            <dt>วิธีรับสินค้า</dt>
             <dd>
               {checkout.deliveryMethod === "pickup"
-                ? `Pickup · ${university.shortName}`
-                : "Shipping"}
+                ? `รับสินค้าด้วยตนเอง · ${university.shortName}`
+                : "จัดส่ง"}
             </dd>
           </div>
+          {/* A pickup order has no address to show. */}
           {checkout.deliveryMethod === "shipping" ? (
             <div className="kv">
-              <dt>Address</dt>
+              <dt>ที่อยู่สำหรับจัดส่ง</dt>
               <dd>{checkout.shippingAddress}</dd>
             </div>
           ) : null}
@@ -1475,19 +1502,21 @@ function ReviewSection({
 
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">Payment slip</span>
+          <span className="panel-title">สลิปการชำระเงิน</span>
         </div>
         <div className="slip-proof">
           {slipPreviewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={slipPreviewUrl} alt="Payment slip you uploaded" />
+            <img src={slipPreviewUrl} alt="สลิปการชำระเงินที่คุณอัปโหลด" />
           ) : null}
           <span className="upload-meta">
             <span className="upload-filename">
-              {slipFile ? slipFile.name : "No slip attached"}
+              {slipFile ? slipFile.name : "ยังไม่ได้แนบสลิป"}
             </span>
             <span className="upload-sub">
-              {slipFile ? formatBytes(slipFile.size) : "Go back to upload one"}
+              {slipFile
+                ? `เลือกสลิปเรียบร้อยแล้ว · ${formatBytes(slipFile.size)}`
+                : "กรุณาย้อนกลับไปอัปโหลดสลิปก่อน"}
             </span>
           </span>
         </div>
@@ -1495,20 +1524,20 @@ function ReviewSection({
 
       <div className="panel">
         <div className="panel-head">
-          <span className="panel-title">Total</span>
+          <span className="panel-title">ยอดรวมทั้งหมด</span>
         </div>
         <dl className="panel-body">
           <div className="kv">
-            <dt>Item subtotal</dt>
+            <dt>ยอดรวมสินค้า</dt>
             <dd>{formatThb(totals.itemSubtotalThb)}</dd>
           </div>
           <div className="kv">
-            <dt>Shipping</dt>
+            <dt>ค่าจัดส่ง</dt>
             <dd>{formatThb(totals.shippingFeeThb)}</dd>
           </div>
           <div className="kv">
             <dt>
-              <strong>Amount paid</strong>
+              <strong>ยอดที่ต้องชำระ</strong>
             </dt>
             <dd>
               <strong>{formatThb(totals.finalTotalThb)}</strong>
@@ -1518,8 +1547,8 @@ function ReviewSection({
       </div>
 
       <p className="review-note">
-        Confirming places the order. Staff will verify your payment slip and
-        contact you on the phone number above.
+        เมื่อกดยืนยัน ระบบจะบันทึกคำสั่งซื้อของคุณ
+        ทีมงานจะตรวจสอบสลิปการชำระเงิน โดยลูกค้าสามารถตรวจสอบสถานะได้ที่ระบบติดตามคำสั่งซื้อ
       </p>
 
       {submissionError ? (
@@ -1556,28 +1585,28 @@ function ReviewSection({
             />
           </div>
           <p className="submit-status-note">
-            Keep this page open — don&apos;t close or refresh.
+            กรุณาเปิดหน้านี้ค้างไว้ อย่าปิดหรือรีเฟรชหน้าจอ
           </p>
         </div>
       ) : null}
 
       <div className="action-bar">
         <div className="action-bar-inner">
-          <dl className="action-bar-total">
-            <dt>Total</dt>
+          <dl className="action-bar-total is-thai">
+            <dt>ยอดรวมทั้งหมด</dt>
             <dd>{formatThb(totals.finalTotalThb)}</dd>
           </dl>
           <div className="action-bar-row">
             <button
-              className="btn btn-secondary"
+              className="btn btn-secondary is-thai"
               type="button"
               onClick={onBack}
               disabled={isSubmitting}
             >
-              Back
+              ย้อนกลับ
             </button>
             <button
-              className="btn btn-primary"
+              className="btn btn-primary is-thai"
               disabled={!slipFile || isSubmitting}
               aria-busy={isSubmitting}
               type="button"
@@ -1586,10 +1615,12 @@ function ReviewSection({
               {isSubmitting ? (
                 <>
                   <span className="spinner" aria-hidden="true" />
-                  {submitStage === "confirming" ? "Confirming" : "Sending"}
+                  {submitStage === "confirming"
+                    ? "กำลังยืนยัน"
+                    : "กำลังส่ง"}
                 </>
               ) : (
-                "Place order"
+                "ยืนยันคำสั่งซื้อ"
               )}
             </button>
           </div>
@@ -1638,30 +1669,36 @@ function SuccessSection({
         </span>
         <h2 className="display-lg">Order <span className="serif-accent">Placed</span></h2>
         <p className="lede">
-          Save your order ID. You&apos;ll need it if you contact us about this
-          order.
+          สั่งซื้อสำเร็จ เราได้รับคำสั่งซื้อของคุณแล้ว
+          กรุณาเก็บหมายเลขนี้ไว้สำหรับติดตามคำสั่งซื้อ
         </p>
 
+        <p className="order-id-label">หมายเลขคำสั่งซื้อ</p>
         <div className="order-id" role="status">
           <span className="order-id-value">{order.orderId}</span>
           <button
-            className="btn btn-secondary btn-sm"
+            className="btn btn-secondary btn-sm is-thai"
             type="button"
             onClick={copyOrderId}
           >
-            {copied ? "Copied" : "Copy"}
+            {copied ? "คัดลอกแล้ว" : "คัดลอก"}
           </button>
         </div>
 
         <div className="done-next">
-          <h3>What happens next</h3>
+          <h3>ขั้นตอนต่อไป</h3>
           <p>
-            Staff verify your payment slip manually, then confirm your order by
-            phone. {university?.brand} ·{" "}
+            สถานะการชำระเงิน:{" "}
+            <strong>{paymentStatusLabels[order.paymentStatus]}</strong>
+          </p>
+          <p>
+            ทีมงานจะตรวจสอบสลิปการชำระเงินของคุณด้วยตนเอง
+          </p>
+          <p>
+            {university?.brand} ·{" "}
             {order.checkout.deliveryMethod === "pickup"
-              ? "University pickup"
-              : "Shipping"}{" "}
-            · Payment {order.paymentStatus}.
+              ? `รับสินค้าด้วยตนเอง · ${university?.shortName ?? ""}`
+              : "จัดส่ง"}
           </p>
         </div>
 
@@ -1670,20 +1707,20 @@ function SuccessSection({
 
           <div className="panel">
             <div className="panel-head">
-              <span className="panel-title">Total</span>
+              <span className="panel-title">ยอดรวมทั้งหมด</span>
             </div>
             <dl className="panel-body">
               <div className="kv">
-                <dt>Item subtotal</dt>
+                <dt>ยอดรวมสินค้า</dt>
                 <dd>{formatThb(order.itemSubtotalThb)}</dd>
               </div>
               <div className="kv">
-                <dt>Shipping</dt>
+                <dt>ค่าจัดส่ง</dt>
                 <dd>{formatThb(order.shippingFeeThb)}</dd>
               </div>
               <div className="kv">
                 <dt>
-                  <strong>Paid</strong>
+                  <strong>ยอดที่ชำระ</strong>
                 </dt>
                 <dd>
                   <strong>{formatThb(order.finalTotalThb)}</strong>
@@ -1694,20 +1731,20 @@ function SuccessSection({
         </div>
 
         <Link
-          className="btn btn-primary btn-block"
+          className="btn btn-primary btn-block is-thai"
           href="/tracking"
           style={{ marginTop: "var(--s-4)" }}
         >
-          Track this order
+          ติดตามคำสั่งซื้อ
         </Link>
 
         <button
-          className="btn btn-secondary btn-block"
+          className="btn btn-secondary btn-block is-thai"
           type="button"
           onClick={onReset}
           style={{ marginTop: "var(--s-3)" }}
         >
-          Start another order
+          สั่งซื้อรายการใหม่
         </button>
       </div>
     </section>
@@ -1721,9 +1758,9 @@ function OrderItemsPanel({ items }: { items: CartItem[] }) {
   return (
     <div className="panel">
       <div className="panel-head">
-        <span className="panel-title">Items</span>
+        <span className="panel-title">รายการสินค้า</span>
         <span className="panel-title">
-          {items.reduce((count, item) => count + item.quantity, 0)} pcs
+          {items.reduce((count, item) => count + item.quantity, 0)} ชิ้น
         </span>
       </div>
       {items.map((item) => (
@@ -1739,9 +1776,10 @@ function OrderItemsPanel({ items }: { items: CartItem[] }) {
           <div className="line-item-text">
             <div className="line-item-name">{item.productName}</div>
             <div className="line-item-meta">
-              {item.colorName} · {item.size} × {item.quantity}
+              {item.colorName} · ไซส์ {item.size} · {formatThb(item.unitPriceThb)}{" "}
+              × {item.quantity} ชิ้น
               {item.sizeSurchargeThb > 0
-                ? ` · incl. ${formatThb(item.sizeSurchargeThb)} size surcharge`
+                ? ` · รวมค่าไซส์ ${formatThb(item.sizeSurchargeThb)} ต่อตัว`
                 : ""}
             </div>
           </div>
@@ -1761,18 +1799,18 @@ function TotalsSummary({
 }) {
   return (
     <div className="summary">
-      <h3 className="summary-title">Order summary</h3>
+      <h3 className="summary-title">สรุปคำสั่งซื้อ</h3>
       <dl>
         <div className="summary-row">
-          <dt>Item subtotal</dt>
+          <dt>ยอดรวมสินค้า</dt>
           <dd>{formatThb(totals.itemSubtotalThb)}</dd>
         </div>
         <div className="summary-row">
-          <dt>Shipping</dt>
+          <dt>ค่าจัดส่ง</dt>
           <dd>{formatThb(totals.shippingFeeThb)}</dd>
         </div>
         <div className="summary-row is-total">
-          <dt>Total</dt>
+          <dt>ยอดรวมทั้งหมด</dt>
           <dd>{formatThb(totals.finalTotalThb)}</dd>
         </div>
       </dl>
@@ -1798,7 +1836,7 @@ function QuantityStepper({
         type="button"
         disabled={value <= min}
         onClick={() => onChange(clampQuantity(value - 1, min))}
-        aria-label="Decrease quantity"
+        aria-label="ลดจำนวน"
       >
         −
       </button>
@@ -1824,7 +1862,7 @@ function QuantityStepper({
         type="button"
         disabled={value >= MAX_LINE_QUANTITY}
         onClick={() => onChange(clampQuantity(value + 1, min))}
-        aria-label="Increase quantity"
+        aria-label="เพิ่มจำนวน"
       >
         +
       </button>
@@ -1895,7 +1933,7 @@ function postOrder(
       try {
         resolve(JSON.parse(xhr.responseText) as OrderSubmissionResult);
       } catch {
-        reject(new Error("Order response could not be read."));
+        reject(new Error("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"));
       }
     };
     xhr.onerror = () => reject(new Error("Order submission failed."));

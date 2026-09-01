@@ -90,8 +90,7 @@ async function persistOrder(
 
     return {
       ok: false,
-      message:
-        "Product catalog is unavailable right now. Please try again in a moment."
+      message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
     };
   }
 
@@ -176,8 +175,7 @@ async function persistOrder(
 
     return {
       ok: false,
-      message:
-        "We could not save your order right now. Please try again in a moment."
+      message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง"
     };
   }
 

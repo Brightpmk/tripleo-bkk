@@ -3,6 +3,14 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/CartProvider";
 
+/**
+ * English typography is unchanged: Inter for body and UI, Cormorant Garamond
+ * for the wordmark and the italic accent inside headings.
+ *
+ * Thai deliberately loads nothing. It resolves through the neutral system
+ * sans stack in --font-body (globals.css), which gives the plain, highly
+ * readable Thai the interface wants — and costs no extra font request.
+ */
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -44,4 +52,3 @@ export default function RootLayout({
     </html>
   );
 }
-

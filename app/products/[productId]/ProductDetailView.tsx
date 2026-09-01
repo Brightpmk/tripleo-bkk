@@ -77,8 +77,8 @@ export function ProductDetailView({ product }: { product: Product }) {
           ) : null}
         </div>
         <div className="header-right">
-          <Link className="track-nav-btn" href="/tracking">
-            Track order
+          <Link className="track-nav-btn is-thai" href="/tracking">
+            ติดตามคำสั่งซื้อ
           </Link>
           <Link className="cart-btn" href={`${shopPath}?step=cart`}>
             Cart
@@ -157,7 +157,7 @@ export function ProductDetailView({ product }: { product: Product }) {
               </div>
               {hasSurchargedSize ? (
                 <p className="size-note">
-                  3XL and above add {formatThb(SIZE_SURCHARGE_THB)} per shirt.
+                  Size 3XL ขึ้นไปเพิ่มราคา {formatThb(SIZE_SURCHARGE_THB)}.
                 </p>
               ) : null}
             </div>
@@ -246,8 +246,8 @@ export function ProductDetailView({ product }: { product: Product }) {
         <span className="site-footer-note">
           Premium university streetwear · Bangkok
         </span>
-        <Link className="site-footer-link" href="/tracking">
-          Track order
+        <Link className="site-footer-link is-thai" href="/tracking">
+          ติดตามคำสั่งซื้อ
         </Link>
       </footer>
     </main>

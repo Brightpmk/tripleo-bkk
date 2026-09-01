@@ -137,7 +137,7 @@ describe("server order validation", () => {
     );
 
     expect(result.ok).toBe(false);
-    expect(result.ok ? undefined : result.message).toContain("review your cart");
+    expect(result.ok ? undefined : result.message).toContain("กรุณาตรวจสอบตะกร้าอีกครั้ง");
     expect(result.ok ? undefined : result.fieldErrors["items.0.price"]).toBeDefined();
   });
 
@@ -216,7 +216,7 @@ describe("server-side size surcharge", () => {
 
     expect(result.ok).toBe(false);
     expect(result.ok ? undefined : result.fieldErrors["items.0.price"]).toBeDefined();
-    expect(result.ok ? undefined : result.message).toContain("review your cart");
+    expect(result.ok ? undefined : result.message).toContain("กรุณาตรวจสอบตะกร้าอีกครั้ง");
   });
 
   it("ignores a client that invents any other unit price", () => {
@@ -262,7 +262,7 @@ describe("server-side size surcharge", () => {
 
     expect(result.ok).toBe(false);
     expect(result.ok ? undefined : result.fieldErrors.deliveryMethod).toBe(
-      "Delivery is the only available option for this university."
+      "มหาวิทยาลัยนี้รองรับเฉพาะการจัดส่งเท่านั้น"
     );
   });
 
