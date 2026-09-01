@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useCart } from "./CartProvider";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   getAvailableDeliveryMethods,
@@ -94,10 +95,15 @@ export function StorefrontApp({
   initialProducts,
   catalogError = ""
 }: StorefrontAppProps) {
-  const [selectedUniversityId, setSelectedUniversityId] =
-    useState<UniversityId | null>(null);
+  // Cart and campus live in the shared provider so a trip to a product
+  // detail route does not discard them. All pricing rules are unchanged.
+  const {
+    items: cartItems,
+    setItems: setCartItems,
+    universityId: selectedUniversityId,
+    setUniversityId: setSelectedUniversityId
+  } = useCart();
   const [step, setStep] = useState<Step>("select");
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [choices, setChoices] = useState<Record<string, ProductChoice>>(() =>
     Object.fromEntries(
       initialProducts.map((product) => [
@@ -740,7 +746,12 @@ function ShopSection({
 
             return (
               <article className="product-card" key={product.id}>
-                <div className="product-card-media">
+                {/* Cover image only — a grid never loads a full gallery. */}
+                <Link
+                  className="product-card-media"
+                  href={`/products/${encodeURIComponent(product.id)}`}
+                  aria-label={`View ${product.colorName} details`}
+                >
                   <ProductImage
                     src={product.image}
                     alt={`${product.name} — ${product.colorName}`}
@@ -750,10 +761,17 @@ function ShopSection({
                   {product.availability ? (
                     <span className="product-tag">{product.availability}</span>
                   ) : null}
-                </div>
+                </Link>
 
                 <div className="product-card-info">
-                  <h3 className="product-card-name">{product.name}</h3>
+                  <h3 className="product-card-name">
+                    <Link
+                      className="product-card-link"
+                      href={`/products/${encodeURIComponent(product.id)}`}
+                    >
+                      {product.name}
+                    </Link>
+                  </h3>
                   <p className="product-card-color">{product.colorName}</p>
                   <p className="product-card-price">
                     {formatThb(unitPriceThb)}

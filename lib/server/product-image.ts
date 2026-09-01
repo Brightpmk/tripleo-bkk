@@ -4,9 +4,13 @@ import { del, put } from "@vercel/blob";
 import type { DeleteCommandOptions, PutCommandOptions } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { getBlobStoreEnv } from "./env";
+import { MAX_PRODUCT_IMAGE_BYTES } from "../product-image-limits";
 import { ProductAdminError } from "./product-admin-error";
 
-export const MAX_PRODUCT_IMAGE_BYTES = 4 * 1024 * 1024;
+export {
+  MAX_PRODUCT_IMAGE_BYTES,
+  VERCEL_REQUEST_BODY_LIMIT_BYTES
+} from "../product-image-limits";
 
 /** Every product image this app writes lives under this Blob prefix. */
 export const PRODUCT_IMAGE_BLOB_PREFIX = "products/";
@@ -29,25 +33,34 @@ type BlobOidcOptions = Pick<PutCommandOptions, "oidcToken" | "storeId">;
 export async function validateProductImage(file: File) {
   const extension = extensionByType[file.type as keyof typeof extensionByType];
 
-  if (!extension || file.size <= 0 || file.size > MAX_PRODUCT_IMAGE_BYTES) {
-    throw new ProductAdminError(
-      "Upload a PNG, JPEG, or WEBP image up to 4 MB.",
-      400,
-      { image: "Upload a PNG, JPEG, or WEBP image up to 4 MB." }
+  if (!extension) {
+    throw imageError("Choose a PNG, JPEG, or WEBP image.");
+  }
+
+  if (file.size <= 0) {
+    throw imageError("That image file is empty.");
+  }
+
+  if (file.size > MAX_PRODUCT_IMAGE_BYTES) {
+    throw imageError(
+      "That image is too large to upload. Pick the image again so it can be optimised, or resize it first."
     );
   }
 
   const bytes = new Uint8Array(await file.slice(0, 12).arrayBuffer());
 
+  // Content, not the declared type, decides. A renamed file is rejected.
   if (!matchesImageSignature(file.type, bytes)) {
-    throw new ProductAdminError(
-      "The selected file is not a valid product image.",
-      400,
-      { image: "The selected file is not a valid PNG, JPEG, or WEBP image." }
+    throw imageError(
+      "That file is not a valid PNG, JPEG, or WEBP image."
     );
   }
 
   return extension;
+}
+
+function imageError(message: string) {
+  return new ProductAdminError(message, 400, { image: message });
 }
 
 export async function uploadProductImage(
@@ -67,14 +80,29 @@ export async function uploadProductImage(
     `${(options.now ?? Date.now)()}-${(options.randomId ?? randomUUID)()}.${extension}`
   ].join("/");
   const blobAuth = getBlobOidcOptions(options.blobAuth);
-  const blob = await (options.putBlob ?? put)(pathname, file, {
-    access: "public",
-    addRandomSuffix: false,
-    contentType: file.type,
-    ...blobAuth
-  });
 
-  return blob.url;
+  try {
+    const blob = await (options.putBlob ?? put)(pathname, file, {
+      access: "public",
+      addRandomSuffix: false,
+      contentType: file.type,
+      ...blobAuth
+    });
+
+    return blob.url;
+  } catch (error) {
+    // Blob/credential internals never reach the admin browser.
+    console.error("Product image upload failed", {
+      productId,
+      errorName: error instanceof Error ? error.name : "UnknownError"
+    });
+
+    throw new ProductAdminError(
+      "The image could not be uploaded to storage. Please try again.",
+      502,
+      { image: "The image could not be uploaded to storage. Please try again." }
+    );
+  }
 }
 
 /**

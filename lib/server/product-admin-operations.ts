@@ -16,12 +16,14 @@ import {
   type ProductImageCleanupStatus
 } from "./product-image";
 import { invalidateProductCatalogCache } from "./product-catalog";
+import { listProductImageUrls } from "./supabase/product-image-repository";
 
 export type ProductOperationDependencies = {
   listProducts: typeof listAdminProducts;
   createProduct: typeof createAdminProduct;
   updateProduct: typeof updateAdminProduct;
   deleteProduct: typeof deleteAdminProduct;
+  listImageUrls: (productId: string) => Promise<string[]>;
   uploadImage: typeof uploadProductImage;
   deleteImage: typeof deleteProductImageBestEffort;
   invalidateCatalog: typeof invalidateProductCatalogCache;
@@ -32,6 +34,7 @@ const defaultDependencies: ProductOperationDependencies = {
   createProduct: createAdminProduct,
   updateProduct: updateAdminProduct,
   deleteProduct: deleteAdminProduct,
+  listImageUrls: listProductImageUrls,
   uploadImage: uploadProductImage,
   deleteImage: deleteProductImageBestEffort,
   invalidateCatalog: invalidateProductCatalogCache
@@ -121,6 +124,8 @@ export async function updateAdminProductWithOptionalImage(
 export type DeleteAdminProductResult = {
   product: AdminProduct;
   imageCleanup: ProductImageCleanupStatus;
+  /** How many Blob assets the delete attempted to clean up. */
+  imageCleanupCount: number;
 };
 
 /**
@@ -147,18 +152,58 @@ export async function deleteAdminProductWithImageCleanup(
     throw new ProductAdminError("Product was not found.", 404);
   }
 
-  // 1. Preserve the image URL while the row still exists.
-  const imageUrl = existing.imageUrl;
+  // 1. Collect every attached image while the rows still exist. A gallery
+  //    read failure must not block the delete, so fall back to the cover.
+  let imageUrls: string[] = [];
+
+  try {
+    imageUrls = await dependencies.listImageUrls(productId);
+  } catch (error) {
+    console.warn("Product gallery read failed before delete", {
+      productId,
+      errorName: error instanceof Error ? error.name : "UnknownError"
+    });
+  }
+
+  if (imageUrls.length === 0 && existing.imageUrl) {
+    imageUrls = [existing.imageUrl];
+  }
 
   // 2. Database first. A throw here propagates and skips cleanup entirely.
+  //    product_images rows go with it via ON DELETE CASCADE.
   await dependencies.deleteProduct(productId);
 
-  // 3. Committed. Cleanup is advisory from here on.
-  const cleanup = await dependencies.deleteImage(imageUrl);
+  // 3. Committed. Blob cleanup is advisory from here on and can never
+  //    resurrect or corrupt the database state.
+  const results = await Promise.all(
+    imageUrls.map((url) => dependencies.deleteImage(url))
+  );
 
   invalidateCatalogSafely(dependencies.invalidateCatalog);
 
-  return { product: existing, imageCleanup: cleanup.status };
+  return {
+    product: existing,
+    imageCleanup: summarizeCleanup(results.map((result) => result.status)),
+    imageCleanupCount: results.length
+  };
+}
+
+/**
+ * One status for the whole gallery: any failure is reported, otherwise a
+ * delete wins over a skip so the admin sees the meaningful outcome.
+ */
+function summarizeCleanup(
+  statuses: ProductImageCleanupStatus[]
+): ProductImageCleanupStatus {
+  if (statuses.some((status) => status === "failed")) {
+    return "failed";
+  }
+
+  if (statuses.some((status) => status === "deleted")) {
+    return "deleted";
+  }
+
+  return "skipped";
 }
 
 function invalidateCatalogSafely(invalidate: () => void) {

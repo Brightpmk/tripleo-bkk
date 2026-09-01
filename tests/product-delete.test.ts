@@ -33,6 +33,7 @@ function makeDependencies(overrides: Partial<Record<string, unknown>> = {}) {
     createProduct: vi.fn(),
     updateProduct: vi.fn(),
     deleteProduct: vi.fn(async () => undefined),
+    listImageUrls: vi.fn(async () => []),
     uploadImage: vi.fn(),
     deleteImage: vi.fn(async () => ({ status: "deleted" as const })),
     invalidateCatalog: vi.fn(),

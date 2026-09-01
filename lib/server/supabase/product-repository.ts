@@ -12,6 +12,7 @@ import {
   getSupabaseServiceClient,
   type SupabaseProductRow
 } from "./client";
+import { listProductImages } from "./product-image-repository";
 
 export async function listSupabaseProducts(): Promise<AdminProduct[]> {
   const supabase = getSupabaseServiceClient();
@@ -54,6 +55,49 @@ export async function listActiveSupabaseCatalog(): Promise<Product[]> {
   }
 
   return ((data ?? []) as SupabaseProductRow[]).flatMap(toStorefrontProduct);
+}
+
+/**
+ * One product plus its full ordered gallery, for the detail page.
+ *
+ * Two queries total: the product row, then its images. Catalog listings
+ * never call this — they read the primary image off products.image_url.
+ */
+export async function getSupabaseProductDetail(
+  productId: string
+): Promise<Product | null> {
+  const supabase = getSupabaseServiceClient();
+  const { data, error } = await supabase
+    .from("products")
+    .select("product_id, university, shirt_color, base_price_thb, image_url, available_sizes, active, sort_order")
+    .eq("product_id", productId)
+    .eq("active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    return null;
+  }
+
+  const [product] = toStorefrontProduct(data as SupabaseProductRow);
+
+  if (!product) {
+    return null;
+  }
+
+  const gallery = await listProductImages(productId);
+  const images = gallery
+    .map((image) => normalizeImageUrl(image.imageUrl))
+    .filter((url) => url !== productImagePlaceholder);
+
+  return {
+    ...product,
+    // Fall back to the cover so a product with no gallery rows still renders.
+    images: images.length > 0 ? images : [product.image]
+  };
 }
 
 export async function createSupabaseProduct(product: AdminProductInput) {

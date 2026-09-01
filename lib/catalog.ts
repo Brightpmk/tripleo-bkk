@@ -57,6 +57,12 @@ export type Product = {
   active: boolean;
   sortOrder: number;
   availability?: string;
+  /**
+   * Full ordered gallery, primary first. Only populated on the product
+   * detail page — catalog listings leave it undefined so a grid never
+   * fetches or ships every gallery image.
+   */
+  images?: string[];
 };
 
 export const universities: University[] = [

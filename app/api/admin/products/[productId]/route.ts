@@ -8,6 +8,7 @@ import {
   parseProductPayload,
   productErrorResponse
 } from "@/lib/server/admin-product-request";
+import { VERCEL_REQUEST_BODY_LIMIT_BYTES } from "@/lib/product-image-limits";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,17 @@ export async function PUT(
     return Response.json(
       { ok: false, message: "Request could not be verified." },
       { status: 403 }
+    );
+  }
+
+  if (isRequestTooLarge(request)) {
+    return Response.json(
+      {
+        ok: false,
+        message:
+          "That image is too large to upload. Pick the image again so it can be optimised, or resize it first."
+      },
+      { status: 413 }
     );
   }
 
@@ -84,4 +96,18 @@ export async function DELETE(
   } catch (error) {
     return productErrorResponse(error, "Product could not be deleted.");
   }
+}
+
+/**
+ * Vercel rejects a body over its own cap with a platform 413 before this
+ * handler runs; this only catches the narrow band just under it so the admin
+ * gets an actionable message instead of a raw platform error.
+ */
+function isRequestTooLarge(request: Request) {
+  const contentLength = Number(request.headers.get("content-length") ?? 0);
+
+  return (
+    Number.isFinite(contentLength) &&
+    contentLength > VERCEL_REQUEST_BODY_LIMIT_BYTES
+  );
 }

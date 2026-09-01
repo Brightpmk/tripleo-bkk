@@ -1512,3 +1512,230 @@
 .order-actions .admin-page-error {
   margin: 0;
 }
+
+.admin-image-status {
+  color: var(--ink-2) !important;
+  font-weight: 600 !important;
+}
+
+/* ── Product image manager ──────────────────────────────────────── */
+.admin-images {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3);
+  background: var(--surface-2);
+}
+
+.admin-images-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.admin-images-count {
+  color: var(--ink-3);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-images-upload {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  cursor: pointer;
+}
+
+.admin-images-upload .admin-button {
+  justify-content: center;
+  width: 100%;
+}
+
+/* The styled span is the affordance; the input itself stays hidden. */
+.admin-images-upload input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+}
+
+.admin-images-upload small {
+  color: var(--ink-3);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.45;
+}
+
+.admin-images-busy {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.8125rem;
+}
+
+.admin-images-empty,
+.admin-images-hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.admin-upload-results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78125rem;
+}
+
+.admin-upload-results .is-ok {
+  color: var(--ok);
+}
+
+.admin-upload-results .is-bad {
+  color: var(--bad);
+}
+
+.admin-image-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.admin-image-row {
+  display: grid;
+  grid-template-columns: auto 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-2);
+  background: var(--surface);
+}
+
+.admin-image-index {
+  color: var(--ink-3);
+  font-size: 0.75rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-image-thumb {
+  width: 52px;
+  height: 64px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-1);
+  background: var(--media);
+  object-fit: cover;
+}
+
+.admin-image-meta {
+  min-width: 0;
+}
+
+.admin-image-primary {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-pill);
+  background: var(--accent-dim);
+  color: var(--ink);
+  font-size: 0.625rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.admin-image-position {
+  color: var(--ink-3);
+  font-size: 0.75rem;
+}
+
+.admin-image-actions {
+  display: flex;
+  gap: 4px;
+}
+
+/* 40px minimum so reordering stays thumb-friendly on a phone. */
+.admin-image-btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--t-1) var(--ease),
+    background var(--t-1) var(--ease);
+}
+
+.admin-image-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.admin-image-btn.is-danger {
+  border-color: var(--bad-line);
+  color: var(--bad);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .admin-image-btn:hover:not(:disabled) {
+    border-color: var(--line-bright);
+    background: var(--surface-3);
+  }
+
+  .admin-image-btn.is-danger:hover:not(:disabled) {
+    border-color: var(--bad);
+    background: var(--bad-dim);
+  }
+}
+
+@media (max-width: 419px) {
+  .admin-image-row {
+    grid-template-columns: 44px minmax(0, 1fr);
+    grid-template-areas:
+      "thumb meta"
+      "actions actions";
+  }
+
+  .admin-image-index {
+    display: none;
+  }
+
+  .admin-image-thumb {
+    grid-area: thumb;
+    width: 44px;
+    height: 54px;
+  }
+
+  .admin-image-meta {
+    grid-area: meta;
+  }
+
+  .admin-image-actions {
+    grid-area: actions;
+    justify-content: flex-end;
+  }
+}

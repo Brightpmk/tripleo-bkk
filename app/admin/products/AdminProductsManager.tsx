@@ -3,6 +3,14 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AdminShell } from "../AdminShell";
 import {
+  acceptedProductImageTypes,
+  formatBytes,
+  MAX_PRODUCT_IMAGE_SOURCE_BYTES,
+  optimizeProductImage
+} from "@/lib/product-image-client";
+import { MAX_PRODUCT_IMAGE_BYTES } from "@/lib/product-image-limits";
+import { ProductImageManager } from "./ProductImageManager";
+import {
   adminProductSizes,
   adminUniversities,
   getUniversityLabel,
@@ -288,6 +296,8 @@ function ProductEditor({
 }) {
   const [draft, setDraft] = useState(product);
   const [image, setImage] = useState<File | null>(null);
+  const [imageNotice, setImageNotice] = useState("");
+  const [optimizingImage, setOptimizingImage] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState("");
   const [saving, setSaving] = useState(false);
@@ -368,6 +378,40 @@ function ProductEditor({
         ? draft.availableSizes.filter((value) => value !== size)
         : [...draft.availableSizes, size]
     );
+  }
+
+  /**
+   * Large source images are downscaled in the browser before upload. The
+   * server re-validates whatever arrives and stays authoritative.
+   */
+  async function selectImage(file: File | null) {
+    setImage(null);
+    setImageNotice("");
+    setErrors((current) => ({ ...current, image: "", imageUrl: "" }));
+
+    if (!file) {
+      return;
+    }
+
+    setOptimizingImage(true);
+
+    try {
+      const result = await optimizeProductImage(file, MAX_PRODUCT_IMAGE_BYTES);
+
+      if (!result.ok) {
+        setErrors((current) => ({ ...current, image: result.message }));
+        return;
+      }
+
+      setImage(result.file);
+      setImageNotice(
+        result.optimized
+          ? `Optimised ${formatBytes(result.originalBytes)} to ${formatBytes(result.optimizedBytes)} (${result.width}x${result.height}).`
+          : `Ready to upload (${formatBytes(result.optimizedBytes)}).`
+      );
+    } finally {
+      setOptimizingImage(false);
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -541,15 +585,35 @@ function ProductEditor({
             <Field
               label={created ? "Product image" : "Replace image (optional)"}
               error={errors.imageUrl || errors.image}
-              hint="PNG, JPEG, or WEBP. Maximum 4 MB."
+              hint={`PNG, JPEG, or WEBP. Up to ${formatBytes(MAX_PRODUCT_IMAGE_SOURCE_BYTES)} — large photos are optimised automatically.`}
             >
               <input
                 type="file"
-                accept="image/png,image/jpeg,image/webp"
-                required={created}
-                onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+                accept={acceptedProductImageTypes.join(",")}
+                required={created && !image}
+                disabled={optimizingImage || busy}
+                onChange={(event) =>
+                  selectImage(event.target.files?.[0] ?? null)
+                }
               />
+              {optimizingImage ? (
+                <small className="admin-image-status" role="status">
+                  Optimising image…
+                </small>
+              ) : imageNotice ? (
+                <small className="admin-image-status" role="status">
+                  {imageNotice}
+                </small>
+              ) : null}
             </Field>
+
+            {created ? (
+              <p className="admin-images-hint">
+                Save the product first, then add gallery images.
+              </p>
+            ) : (
+              <ProductImageManager productId={product.productId} />
+            )}
 
             <label className="admin-active-toggle">
               <input
