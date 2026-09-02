@@ -1685,7 +1685,7 @@ function SuccessSection({
         </div>
 
         <div className="done-next">
-          <h3>ขั้นตอนต่อไป</h3>
+          <h3>ข้อมูลคำสั่งซื้อ</h3>
           <p>
             สถานะการชำระเงิน:{" "}
             <strong>{paymentStatusLabels[order.paymentStatus]}</strong>
