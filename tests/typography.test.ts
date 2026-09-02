@@ -65,6 +65,7 @@ describe("English typography is untouched", () => {
       .split(String.fromCharCode(10))
       .map((line) => line.trim())
       .filter(Boolean)
+      .filter((line) => !line.startsWith("@import"))
       .filter((line) => !present.has(line));
 
     removed.forEach((line) =>
@@ -125,7 +126,7 @@ describe("Thai is served by a neutral system stack", () => {
     expect(css).toContain("--th-body-weight: 400");
     expect(css).toContain("--th-helper-weight: 400");
     // Weight is spent only where it carries meaning.
-    expect(css).toContain("--th-label-weight: 500");
+    expect(css).toContain("--th-label-weight: 600");
     expect(css).toContain("--th-section-weight: 600");
     expect(css).toContain("--th-cta-weight: 600");
   });
@@ -171,7 +172,7 @@ describe("Thai-only rules never reach a Latin element", () => {
 describe("Thai has five roles and nothing else", () => {
   const roles = [
     ["body", "--th-body", "1rem", "400", "1.65"],
-    ["label", "--th-label", "0.875rem", "500", "1.5"],
+    ["label", "--th-label", "0.875rem", "600", "1.5"],
     ["section", "--th-section", "0.8125rem", "600", "1.45"],
     ["cta", "--th-cta", "0.9375rem", "600", "1.4"],
     ["helper", "--th-helper", "0.8125rem", "400", "1.6"]

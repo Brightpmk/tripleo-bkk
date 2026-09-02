@@ -910,16 +910,27 @@ function CartSection({
             {items.map((item) => (
               <article className="cart-row" key={item.lineId}>
                 <div className="cart-row-media">
-                  <ProductImage
-                    src={item.image}
-                    alt={`${item.productName} — ${item.colorName}`}
-                    width={200}
-                    height={240}
-                  />
+                  <Link
+                    href={`/products/${item.productId}`}
+                    className="cart-row-media-link"
+                    aria-label={`ดูรายละเอียดสินค้า ${item.productName} — ${item.colorName}`}
+                  >
+                    <ProductImage
+                      src={item.image}
+                      alt={`${item.productName} — ${item.colorName}`}
+                      width={200}
+                      height={240}
+                    />
+                  </Link>
                 </div>
 
                 <div className="cart-row-main">
-                  <span className="cart-row-name">{item.productName}</span>
+                  <Link
+                    href={`/products/${item.productId}`}
+                    className="cart-row-name cart-row-link"
+                  >
+                    {item.productName}
+                  </Link>
                   <span className="cart-row-meta">
                     {item.colorName} · ไซส์ {item.size}
                   </span>

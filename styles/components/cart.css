@@ -28,10 +28,30 @@
   overflow: hidden;
 }
 
+.cart-row-media-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  border-radius: inherit;
+}
+
+.cart-row-media-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
 .cart-row-media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform var(--t-2) var(--ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cart-row-media-link:hover img {
+    transform: scale(1.04);
+  }
 }
 
 .cart-row-main {
@@ -49,6 +69,21 @@
   line-height: 1.25;
   color: var(--ink);
   overflow-wrap: anywhere;
+  text-decoration: none;
+  display: inline-block;
+  transition: color var(--t-1) var(--ease);
+}
+
+.cart-row-name:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cart-row-name:hover {
+    color: var(--accent);
+  }
 }
 
 .cart-row-meta {
