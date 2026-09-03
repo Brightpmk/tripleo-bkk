@@ -8,7 +8,10 @@ import {
   MAX_PRODUCT_IMAGE_SOURCE_BYTES,
   optimizeProductImage
 } from "@/lib/product-image-client";
-import { MAX_PRODUCT_IMAGE_BYTES } from "@/lib/product-image-limits";
+import {
+  MAX_PRODUCT_IMAGE_BYTES,
+  VERCEL_REQUEST_BODY_LIMIT_BYTES
+} from "@/lib/product-image-limits";
 import { ProductImageManager } from "./ProductImageManager";
 import {
   adminProductSizes,
@@ -19,6 +22,19 @@ import {
 } from "@/lib/admin-products";
 
 type AdminNotice = { tone: "success" | "warning"; text: string };
+
+interface DeleteApiResponse {
+  ok?: boolean;
+  message?: string;
+  imageCleanup?: string;
+}
+
+interface SaveApiResponse {
+  ok?: boolean;
+  message?: string;
+  fieldErrors?: Record<string, string>;
+  product?: AdminProduct;
+}
 
 type FilterUniversity = AdminUniversity | "ALL";
 type FilterStatus = "ALL" | "ACTIVE" | "INACTIVE";
@@ -361,22 +377,28 @@ function ProductEditor({
         `/api/admin/products/${encodeURIComponent(product.productId)}`,
         { method: "DELETE" }
       );
-      const result = (await response.json()) as {
-        ok?: boolean;
-        message?: string;
-        imageCleanup?: string;
-      };
+      let result: DeleteApiResponse | null = null;
 
-      if (!response.ok || !result.ok) {
+      try {
+        result = (await response.json()) as DeleteApiResponse;
+      } catch {
+        // Non-JSON response
+      }
+
+      if (!response.ok || !result?.ok) {
         setConfirmingDelete(false);
-        setMessage(result.message || "Product could not be deleted.");
+        setMessage(
+          result?.message ||
+            `Product could not be deleted (HTTP ${response.status}: ${response.statusText || "Server error"}).`
+        );
         return;
       }
 
       onDeleted(product, result.imageCleanup ?? "skipped");
-    } catch {
+    } catch (err) {
       setConfirmingDelete(false);
-      setMessage("Product could not be deleted. Please try again.");
+      const errDetail = err instanceof Error ? err.message : String(err);
+      setMessage(`Product could not be deleted: ${errDetail}. Please try again.`);
     } finally {
       setDeleting(false);
     }
@@ -489,11 +511,22 @@ function ProductEditor({
       return;
     }
 
+    const totalPayloadBytes = created
+      ? createdImages.reduce((sum, f) => sum + f.size, 0)
+      : (image ? image.size : 0);
+
+    if (totalPayloadBytes > VERCEL_REQUEST_BODY_LIMIT_BYTES) {
+      const errorMsg = `ขนาดไฟล์รูปภาพรวม (${formatBytes(totalPayloadBytes)}) เกินขีดจำกัดของระบบ (${formatBytes(VERCEL_REQUEST_BODY_LIMIT_BYTES)}) กรุณาลดจำนวนรูปหรือลดขนาดรูปภาพก่อนบันทึก`;
+      setErrors((current) => ({ ...current, image: errorMsg }));
+      setMessage(`Product could not be saved: ${errorMsg}`);
+      setSaving(false);
+      return;
+    }
+
     const formData = new FormData();
     formData.set("product", JSON.stringify(draft));
 
     if (created) {
-      formData.set("image", createdImages[0]);
       createdImages.forEach((img) => formData.append("images", img));
     } else {
       if (image) formData.set("image", image);
@@ -507,22 +540,58 @@ function ProductEditor({
         method: created ? "POST" : "PUT",
         body: formData
       });
-      const result = (await response.json()) as {
-        ok?: boolean;
-        message?: string;
-        fieldErrors?: Record<string, string>;
-        product?: AdminProduct;
-      };
 
-      if (!response.ok || !result.ok || !result.product) {
-        setErrors(result.fieldErrors ?? {});
-        setMessage(result.message || "Product could not be saved.");
+      let result: SaveApiResponse | null = null;
+
+      try {
+        result = (await response.json()) as SaveApiResponse;
+      } catch {
+        // Not a JSON response (e.g. Vercel 413 Payload Too Large HTML, 504 Gateway Timeout)
+      }
+
+      if (!response.ok || !result?.ok || !result.product) {
+        setErrors(result?.fieldErrors ?? {});
+        if (result?.message) {
+          setMessage(result.message);
+        } else if (response.status === 413) {
+          setMessage(
+            "Product could not be saved: ขนาดไฟล์รูปภาพรวมใหญ่เกินขีดจำกัดของระบบ (HTTP 413 Payload Too Large). กรุณาลดขนาดหรือลดจำนวนรูปภาพ"
+          );
+        } else if (response.status === 401) {
+          setMessage(
+            "Product could not be saved: เซสชันหมดอายุหรือไม่ได้รับอนุญาต (HTTP 401 Unauthorized). กรุณาออกจากระบบแล้วเข้าสู่ระบบใหม่"
+          );
+        } else if (response.status === 403) {
+          setMessage(
+            "Product could not be saved: คำขอไม่ผ่านการตรวจสอบความปลอดภัย (HTTP 403 Forbidden - Same-Origin Verification Failed). กรุณาตรวจสอบ URL ที่เข้าใช้งาน"
+          );
+        } else if (response.status === 504 || response.status === 502) {
+          setMessage(
+            `Product could not be saved: เซิร์ฟเวอร์ใช้เวลาประมวลผลนานเกินไป (HTTP ${response.status} Gateway Timeout). กรุณาลองใหม่อีกครั้ง`
+          );
+        } else {
+          setMessage(
+            `Product could not be saved (HTTP ${response.status}: ${response.statusText || "Server error"}). Please try again.`
+          );
+        }
         return;
       }
 
       onSaved(result.product, created);
-    } catch {
-      setMessage("Product could not be saved. Please try again.");
+    } catch (err) {
+      const errDetail = err instanceof Error ? err.message : String(err);
+      const isNetworkError =
+        errDetail.includes("Failed to fetch") ||
+        errDetail.includes("NetworkError") ||
+        errDetail.includes("Load failed");
+
+      if (isNetworkError) {
+        setMessage(
+          `Product could not be saved: เกิดปัญหาการเชื่อมต่อเครือข่าย หรือไฟล์มีขนาดใหญ่เกินกว่าที่เบราว์เซอร์จะส่งได้ (${errDetail}). Please try again.`
+        );
+      } else {
+        setMessage(`Product could not be saved: ${errDetail}. Please try again.`);
+      }
     } finally {
       setSaving(false);
     }

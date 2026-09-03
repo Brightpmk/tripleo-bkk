@@ -47,15 +47,37 @@ export type ProductImageOptimizeResult =
     }
   | { ok: false; message: string };
 
-export function isAcceptedProductImageType(type: string) {
-  return (acceptedProductImageTypes as readonly string[]).includes(type);
+export function resolveProductImageMimeType(type: string, name = ""): string {
+  const normalized = (type || "").toLowerCase().trim();
+  if ((acceptedProductImageTypes as readonly string[]).includes(normalized)) {
+    return normalized;
+  }
+
+  const lowerName = name.toLowerCase().trim();
+  if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")) {
+    return "image/jpeg";
+  }
+  if (lowerName.endsWith(".png")) {
+    return "image/png";
+  }
+  if (lowerName.endsWith(".webp")) {
+    return "image/webp";
+  }
+
+  return normalized;
+}
+
+export function isAcceptedProductImageType(type: string, name = "") {
+  const resolved = resolveProductImageMimeType(type, name);
+  return (acceptedProductImageTypes as readonly string[]).includes(resolved);
 }
 
 export async function optimizeProductImage(
   file: File,
   targetBytes: number
 ): Promise<ProductImageOptimizeResult> {
-  if (!isAcceptedProductImageType(file.type)) {
+  const resolvedType = resolveProductImageMimeType(file.type, file.name);
+  if (!isAcceptedProductImageType(resolvedType)) {
     return { ok: false, message: "Choose a PNG, JPEG, or WEBP image." };
   }
 
@@ -83,10 +105,11 @@ export async function optimizeProductImage(
       return passthrough(file);
     }
 
-    // Already small enough and modestly sized: leave the original untouched
+    // Already small enough (<= 800 KB) and modestly sized: leave untouched
     // rather than re-encoding and losing quality for no benefit.
+    const ALREADY_OPTIMIZED_THRESHOLD_BYTES = 800 * 1024;
     if (
-      file.size <= targetBytes &&
+      file.size <= Math.min(targetBytes, ALREADY_OPTIMIZED_THRESHOLD_BYTES) &&
       Math.max(source.width, source.height) <= PRODUCT_IMAGE_MAX_EDGE_PX
     ) {
       return {
@@ -101,7 +124,7 @@ export async function optimizeProductImage(
     }
 
     // PNG keeps alpha by re-encoding to WEBP; everything else goes to JPEG.
-    const preferredType = file.type === "image/png" ? "image/webp" : "image/jpeg";
+    const preferredType = resolvedType === "image/png" ? "image/webp" : "image/jpeg";
     let best: { blob: Blob; width: number; height: number } | null = null;
 
     for (const pass of optimizePasses) {
@@ -192,7 +215,11 @@ async function encode(
     context.fillRect(0, 0, width, height);
   }
 
-  context.drawImage(source.image, 0, 0, width, height);
+  try {
+    context.drawImage(source.image, 0, 0, width, height);
+  } catch {
+    return null;
+  }
 
   const blob = await canvasToBlob(canvas, type, quality);
 
@@ -210,7 +237,16 @@ async function encode(
 }
 
 async function loadImageSource(file: File) {
-  if (typeof createImageBitmap === "function") {
+  // On iOS / iPadOS Safari, createImageBitmap has known WebKit bugs (e.g. throwing
+  // InvalidStateError on 2D canvas drawImage or memory allocation limits).
+  // Using HTMLImageElement via object URL is universally reliable across WebKit and iPad.
+  const isSafariOrIOS =
+    typeof navigator !== "undefined" &&
+    (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) ||
+      /^((?!chrome|android).)*safari/i.test(navigator.userAgent));
+
+  if (!isSafariOrIOS && typeof createImageBitmap === "function") {
     try {
       const bitmap = await createImageBitmap(file, {
         imageOrientation: "from-image"
