@@ -27,7 +27,7 @@ const emptyProduct: AdminProduct = {
   productId: "",
   university: adminUniversities[0],
   shirtColor: "",
-  priceThb: 300,
+  priceThb: 299,
   imageUrl: "",
   availableSizes: [...adminProductSizes],
   active: true,
