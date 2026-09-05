@@ -158,6 +158,42 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
                       <span className="order-item-name">
                         {item.shirtColor || item.productId || "—"}
                       </span>
+                      {item.itemId ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                            gap: "var(--s-2)",
+                            marginTop: "1px"
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "var(--ink-3)",
+                              fontWeight: 600
+                            }}
+                          >
+                            Item ID:
+                          </span>
+                          <code
+                            style={{
+                              fontFamily: "var(--font-mono)",
+                              fontSize: "0.75rem",
+                              color: "var(--ink-2)",
+                              background: "var(--surface-2)",
+                              padding: "1px 6px",
+                              borderRadius: "var(--r-1)",
+                              border: "1px solid var(--line)",
+                              overflowWrap: "anywhere"
+                            }}
+                          >
+                            {item.itemId}
+                          </code>
+                          <CopyButton label="Copy" value={item.itemId} subtle />
+                        </div>
+                      ) : null}
                       <span className="order-item-meta">
                         Size {item.size || "—"} · {formatThb(item.unitPriceThb)} ×{" "}
                         {item.quantity}
