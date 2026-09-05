@@ -85,7 +85,7 @@
   flex-direction: column;
   gap: 3px;
   min-width: 0;
-  padding: var(--s-4);
+  padding: var(--s-4) var(--s-4) 4px;
 }
 
 .product-card-name {
@@ -117,7 +117,7 @@
 
 .product-card-sizes {
   grid-area: sizes;
-  padding: var(--s-3) var(--s-4) var(--s-4);
+  padding: 0 var(--s-4) var(--s-4);
 }
 
 .product-card-action {
@@ -141,7 +141,7 @@
 
 @media (min-width: 640px) {
   .product-card-info {
-    padding: var(--s-5) var(--s-5) var(--s-3);
+    padding: var(--s-5) var(--s-5) 4px;
   }
 
   .product-card-sizes {
@@ -157,7 +157,7 @@
 .size-field {
   display: flex;
   flex-direction: column;
-  gap: var(--s-2);
+  gap: 4px;
 }
 
 .size-field-head {

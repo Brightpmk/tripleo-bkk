@@ -228,6 +228,10 @@
   margin-top: var(--s-5);
 }
 
+.size-field.detail-field {
+  margin-top: 0;
+}
+
 .detail-qty-row {
   display: flex;
   align-items: center;
