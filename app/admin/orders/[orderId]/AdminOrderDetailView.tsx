@@ -196,7 +196,6 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
                           >
                             {item.productId}
                           </Link>
-                          <CopyButton label="Copy" value={item.productId} subtle />
                         </div>
                       ) : null}
                       <span className="order-item-meta">
