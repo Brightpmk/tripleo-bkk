@@ -158,7 +158,7 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
                       <span className="order-item-name">
                         {item.shirtColor || item.productId || "—"}
                       </span>
-                      {item.itemId ? (
+                      {item.productId ? (
                         <div
                           style={{
                             display: "flex",
@@ -175,9 +175,12 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
                               fontWeight: 600
                             }}
                           >
-                            Item ID:
+                            Product ID:
                           </span>
-                          <code
+                          <Link
+                            href={`/products/${encodeURIComponent(item.productId)}`}
+                            target="_blank"
+                            rel="noreferrer"
                             style={{
                               fontFamily: "var(--font-mono)",
                               fontSize: "0.75rem",
@@ -186,12 +189,14 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
                               padding: "1px 6px",
                               borderRadius: "var(--r-1)",
                               border: "1px solid var(--line)",
-                              overflowWrap: "anywhere"
+                              overflowWrap: "anywhere",
+                              textDecoration: "none"
                             }}
+                            title="View product page"
                           >
-                            {item.itemId}
-                          </code>
-                          <CopyButton label="Copy" value={item.itemId} subtle />
+                            {item.productId}
+                          </Link>
+                          <CopyButton label="Copy" value={item.productId} subtle />
                         </div>
                       ) : null}
                       <span className="order-item-meta">
