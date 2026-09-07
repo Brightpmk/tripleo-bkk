@@ -6,9 +6,12 @@ import { testProducts } from "./fixtures/products";
 
 vi.mock("server-only", () => ({}));
 
-const jpegSlip = () =>
-  new File([new Uint8Array([0xff, 0xd8, 0xff, 0x00])], "customer-slip.jpg", {
-    type: "image/jpeg"
+const validSlip = () =>
+  new File([new Uint8Array(Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64"
+  ))], "customer-slip.png", {
+    type: "image/png"
   });
 
 function buildRequest(submissionKey: string): OrderSubmissionRequest {
@@ -33,14 +36,14 @@ function buildRequest(submissionKey: string): OrderSubmissionRequest {
 }
 
 describe("order service slip persistence", () => {
-  it("uploads a valid slip and persists its Drive file ID", async () => {
-    const upload = vi.fn(async () => ({ fileId: "drive-file-123" }));
+  it("uploads a valid slip and persists its opaque storage reference", async () => {
+    const upload = vi.fn(async () => ({ fileId: "blob:v1:payment-slips/test" }));
     let persistedOrder: ConfirmedOrder | undefined;
     const persistOrder = vi.fn(async (order: ConfirmedOrder) => {
       persistedOrder = order;
     });
 
-    const result = await submitOrderWithSlip(buildRequest("upload-success"), jpegSlip(), {
+    const result = await submitOrderWithSlip(buildRequest("upload-success"), validSlip(), {
       getProductCatalog: async () => testProducts,
       persistOrder,
       slipStorage: {
@@ -53,11 +56,11 @@ describe("order service slip persistence", () => {
     expect(upload).toHaveBeenCalledTimes(1);
     expect(persistOrder).toHaveBeenCalledTimes(1);
     expect(persistedOrder?.paymentStatus).toBe("pending");
-    expect(persistedOrder?.slipFileId).toBe("drive-file-123");
+    expect(persistedOrder?.slipFileId).toBe("blob:v1:payment-slips/test");
   });
 
-  it("does not leak Drive details in the success response", async () => {
-    const result = await submitOrderWithSlip(buildRequest("privacy-success"), jpegSlip(), {
+  it("does not leak storage details in the success response", async () => {
+    const result = await submitOrderWithSlip(buildRequest("privacy-success"), validSlip(), {
       getProductCatalog: async () => testProducts,
       persistOrder: vi.fn(async () => undefined),
       slipStorage: {
@@ -73,16 +76,16 @@ describe("order service slip persistence", () => {
     expect(responseJson).not.toContain("GOOGLE_DRIVE_SLIP_FOLDER_ID");
   });
 
-  it("does not persist the order when Drive upload fails", async () => {
+  it("does not persist the order when Blob upload fails", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const persistOrder = vi.fn(async () => undefined);
 
-    const result = await submitOrderWithSlip(buildRequest("drive-fails"), jpegSlip(), {
+    const result = await submitOrderWithSlip(buildRequest("drive-fails"), validSlip(), {
       getProductCatalog: async () => testProducts,
       persistOrder,
       slipStorage: {
         upload: vi.fn(async () => {
-          throw new Error("Drive unavailable");
+          throw new Error("Blob unavailable");
         }),
         delete: vi.fn()
       }
@@ -91,7 +94,7 @@ describe("order service slip persistence", () => {
     expect(result.ok).toBe(false);
     expect(persistOrder).not.toHaveBeenCalled();
     expect(consoleError).toHaveBeenCalledWith("Order persistence failed", expect.objectContaining({
-      operation: "drive-slip-upload"
+      operation: "blob-slip-upload"
     }));
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain("customer-slip");
     consoleError.mockRestore();
@@ -101,7 +104,7 @@ describe("order service slip persistence", () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const deleteSlip = vi.fn(async () => undefined);
 
-    const result = await submitOrderWithSlip(buildRequest("supabase-fails"), jpegSlip(), {
+    const result = await submitOrderWithSlip(buildRequest("supabase-fails"), validSlip(), {
       getProductCatalog: async () => testProducts,
       persistOrder: vi.fn(async () => {
         throw new Error("Supabase unavailable");
@@ -144,7 +147,7 @@ describe("order service slip persistence", () => {
     const upload = vi.fn(async () => ({ fileId: "drive-file-789" }));
     const persistOrder = vi.fn(async () => undefined);
 
-    const result = await submitOrderWithSlip(buildRequest("catalog-fails"), jpegSlip(), {
+    const result = await submitOrderWithSlip(buildRequest("catalog-fails"), validSlip(), {
       getProductCatalog: async () => {
         throw new Error("Products unavailable");
       },

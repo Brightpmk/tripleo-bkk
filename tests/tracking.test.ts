@@ -368,6 +368,7 @@ describe("public tracking privacy", () => {
     expect(payload).not.toContain("Ada Lovelace");
     expect(payload).not.toContain("internal note");
     expect(payload).not.toContain("drive-secret-1");
+    expect(payload).not.toContain("blob:v1:payment-slips/");
     expect(payload).not.toContain("SHIPPING_ADDRESS");
     expect(payload).not.toContain("SLIP_FILE_ID");
     expect(payload).not.toContain("spreadsheet");

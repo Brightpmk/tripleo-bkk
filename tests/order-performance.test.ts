@@ -23,9 +23,12 @@ function buildRequest(submissionKey: string): OrderSubmissionRequest {
   };
 }
 
-const jpegSlip = () =>
-  new File([new Uint8Array([0xff, 0xd8, 0xff, 0x00])], "customer-slip.jpg", {
-    type: "image/jpeg"
+const validSlip = () =>
+  new File([new Uint8Array(Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64"
+  ))], "customer-slip.png", {
+    type: "image/png"
   });
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,7 +49,7 @@ describe("order submission concurrency", () => {
 
     const result = await submitOrderWithSlip(
       buildRequest("concurrency-1"),
-      jpegSlip(),
+      validSlip(),
       {
         getProductCatalog,
         persistOrder: vi.fn(async () => {
@@ -77,7 +80,7 @@ describe("order submission concurrency", () => {
 
     const result = await submitOrderWithSlip(
       buildRequest("ordering-1"),
-      jpegSlip(),
+      validSlip(),
       {
         getProductCatalog: async () => {
           order.push("catalog");
@@ -111,7 +114,7 @@ describe("order submission concurrency", () => {
 
     const result = await submitOrderWithSlip(
       { ...buildRequest("invalid-1"), items: [] },
-      jpegSlip(),
+      validSlip(),
       {
         getProductCatalog: async () => testProducts,
         persistOrder,
@@ -129,7 +132,7 @@ describe("order submission concurrency", () => {
 
     const result = await submitOrderWithSlip(
       buildRequest("durability-1"),
-      jpegSlip(),
+      validSlip(),
       {
         getProductCatalog: async () => testProducts,
         slipStorage: {
@@ -158,7 +161,7 @@ describe("order timing diagnostics", () => {
     try {
       const result = await submitOrderWithSlip(
         buildRequest("timing-1"),
-        jpegSlip(),
+        validSlip(),
         {
           getProductCatalog: async () => testProducts,
           persistOrder: vi.fn(async () => undefined),
@@ -185,7 +188,7 @@ describe("order timing diagnostics", () => {
       expect(logged).not.toContain(customer.fullName);
       expect(logged).not.toContain(customer.phone);
       expect(logged).not.toContain(customer.shippingAddress);
-      expect(logged).not.toContain("customer-slip.jpg");
+      expect(logged).not.toContain("customer-slip.png");
       expect(logged).not.toContain("drive-secret-file-id");
     } finally {
       info.mockRestore();
@@ -198,7 +201,7 @@ describe("order timing diagnostics", () => {
   it("can be switched off entirely", async () => {
     const info = vi.spyOn(console, "info").mockImplementation(() => {});
 
-    await submitOrderWithSlip(buildRequest("timing-off-1"), jpegSlip(), {
+    await submitOrderWithSlip(buildRequest("timing-off-1"), validSlip(), {
       getProductCatalog: async () => testProducts,
       persistOrder: vi.fn(async () => undefined),
       slipStorage: {

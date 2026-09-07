@@ -3,17 +3,16 @@ import {
   getAdminOrderDetail,
   getAdminOrderSlipFileId
 } from "@/lib/server/order-admin-service";
-import { GoogleDriveSlipStorage } from "@/lib/server/payment-slip-storage";
+import { PaymentSlipStorageRouter } from "@/lib/server/payment-slip-storage";
 
 export const runtime = "nodejs";
 
 /**
  * Streams a payment slip to an authenticated admin.
  *
- * The Drive file stays private: it is fetched server-side with the store's
- * own OAuth credentials and proxied as bytes. No Drive URL, file ID, refresh
- * token, or client secret is ever handed to the browser, and the slip is
- * addressed by ORDER_ID so a caller cannot ask for an arbitrary Drive file.
+ * The private file is fetched server-side and proxied as bytes. No storage
+ * reference or credential reaches the browser, and the slip is addressed by
+ * ORDER_ID so a caller cannot request an arbitrary object.
  */
 export async function GET(
   _request: Request,
@@ -46,7 +45,7 @@ export async function GET(
       );
     }
 
-    const slip = await new GoogleDriveSlipStorage().read(fileId);
+    const slip = await new PaymentSlipStorageRouter().read(fileId);
 
     return new Response(new Uint8Array(slip.buffer), {
       status: 200,

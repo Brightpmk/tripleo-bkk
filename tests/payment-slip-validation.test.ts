@@ -1,19 +1,24 @@
-import { describe, expect, it, vi } from "vitest";
+import sharp from "sharp";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import {
-  buildSlipFileName,
-  type PaymentSlipUploadInput
+  buildSlipBlobPath
 } from "@/lib/server/payment-slip-storage";
 import { validatePaymentSlipUpload } from "@/lib/server/payment-slip-validation";
 
 vi.mock("server-only", () => ({}));
 
-const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0x00]);
-const pngBytes = new Uint8Array([
-  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a
-]);
-const webpBytes = new Uint8Array([
-  0x52, 0x49, 0x46, 0x46, 0x04, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50
-]);
+let jpegBytes: ArrayBuffer;
+let pngBytes: ArrayBuffer;
+let webpBytes: ArrayBuffer;
+
+beforeAll(async () => {
+  const image = sharp({
+    create: { width: 2, height: 2, channels: 3, background: "white" }
+  });
+  jpegBytes = Uint8Array.from(await image.clone().jpeg().toBuffer()).buffer;
+  pngBytes = Uint8Array.from(await image.clone().png().toBuffer()).buffer;
+  webpBytes = Uint8Array.from(await image.clone().webp().toBuffer()).buffer;
+});
 
 describe("payment slip validation", () => {
   it("accepts a supported JPEG", async () => {
@@ -53,6 +58,16 @@ describe("payment slip validation", () => {
     expect(result.ok).toBe(false);
   });
 
+  it("rejects malformed content even when its signature looks valid", async () => {
+    const result = await validatePaymentSlipUpload(
+      new File([new Uint8Array([0xff, 0xd8, 0xff, 0x00])], "broken.jpg", {
+        type: "image/jpeg"
+      })
+    );
+
+    expect(result.ok).toBe(false);
+  });
+
   it("rejects an oversized file", async () => {
     const result = await validatePaymentSlipUpload(
       new File([new Uint8Array(5 * 1024 * 1024 + 1)], "huge.jpg", {
@@ -69,19 +84,18 @@ describe("payment slip validation", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("generates filenames without customer PII", () => {
-    const input: PaymentSlipUploadInput = {
-      orderId: "KG-2026-A8F2B91C",
-      createdAt: new Date("2026-08-29T10:00:00.000Z"),
-      buffer: Buffer.from(jpegBytes),
-      mimeType: "image/jpeg",
-      extension: "jpg"
-    };
-    const fileName = buildSlipFileName(input);
+  it("generates non-guessable Blob paths without customer PII", () => {
+    const pathname = buildSlipBlobPath(
+      "KG-2026-A8F2B91C",
+      "jpg",
+      "123e4567-e89b-42d3-a456-426614174000"
+    );
 
-    expect(fileName).toMatch(/^KG-2026-A8F2B91C-20260829-[a-f0-9]{6}\.jpg$/);
-    expect(fileName).not.toContain("Ada");
-    expect(fileName).not.toContain("0812345678");
-    expect(fileName).not.toContain("Test Road");
+    expect(pathname).toBe(
+      "payment-slips/KG-2026-A8F2B91C/123e4567-e89b-42d3-a456-426614174000.jpg"
+    );
+    expect(pathname).not.toContain("Ada");
+    expect(pathname).not.toContain("0812345678");
+    expect(pathname).not.toContain("Test Road");
   });
 });

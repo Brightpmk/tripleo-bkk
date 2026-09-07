@@ -240,8 +240,8 @@ export function AdminOrderDetailView({ order }: { order: AdminOrderDetail }) {
             />
             {slipOpen && current.hasSlip ? (
               <div className="slip-viewer">
-                {/* Proxied through the authenticated admin API — the Drive
-                    file itself is never made public. */}
+                {/* Proxied through the authenticated admin API; the storage
+                    object itself is never made public. */}
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={`/api/admin/orders/${encodeURIComponent(current.orderId)}/slip`}

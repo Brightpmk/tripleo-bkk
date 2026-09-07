@@ -101,7 +101,7 @@ export type DeleteOrderDependencies = {
  * Ordering is deliberate and must not be reversed:
  *   1. delete the order in Supabase — order_items cascade in the same
  *      statement, so there can be no orphans and no partial delete
- *   2. only then, best-effort Google Drive slip cleanup
+ *   2. only then, best-effort payment slip cleanup
  *
  * Deleting the slip first would risk destroying payment evidence for an
  * order that still exists if the database write then failed.
@@ -162,16 +162,16 @@ async function cleanUpSlip(
     const remove =
       deleteSlip ??
       (async (id: string) => {
-        const { GoogleDriveSlipStorage } = await import(
+        const { PaymentSlipStorageRouter } = await import(
           "./payment-slip-storage"
         );
-        await new GoogleDriveSlipStorage().delete(id);
+        await new PaymentSlipStorageRouter().delete(id);
       });
 
     await remove(fileId);
     return "deleted";
   } catch (error) {
-    // Safe metadata only — never the file id contents or Drive credentials.
+    // Safe metadata only: never the storage reference or credentials.
     console.warn("Order slip cleanup failed", {
       operation: "delete-order",
       errorName: error instanceof Error ? error.name : "UnknownError"

@@ -17,20 +17,24 @@ describe("server credential boundaries", () => {
     expect(envExample).toContain("GOOGLE_DRIVE_CLIENT_ID");
     expect(envExample).toContain("GOOGLE_DRIVE_CLIENT_SECRET");
     expect(envExample).toContain("GOOGLE_DRIVE_REFRESH_TOKEN");
-    expect(envExample).toContain("GOOGLE_DRIVE_SLIP_FOLDER_ID");
+    expect(envExample).not.toContain("GOOGLE_DRIVE_SLIP_FOLDER_ID");
     expect(envExample).toContain("ADMIN_PASSWORD_HASH");
     expect(envExample).toContain("ADMIN_SESSION_SECRET");
     expect(envExample).toContain("BLOB_STORE_ID");
+    expect(envExample).toContain("PAYMENT_SLIP_BLOB_STORE_ID");
     expect(envExample).toContain("SUPABASE_URL");
     expect(envExample).toContain("SUPABASE_SERVICE_ROLE_KEY");
     expect(envExample).not.toContain("BLOB_READ_WRITE_TOKEN");
     expect(envExample).not.toContain("ADMIN_PASSWORD=");
   });
 
-  it("keeps Drive implementation server-only and private", () => {
+  it("keeps payment-slip storage server-only and private", () => {
     const source = readFileSync("lib/server/payment-slip-storage.ts", "utf8");
 
     expect(source).toContain('import "server-only"');
+    expect(source).toContain('access: "private"');
+    expect(source).not.toContain('access: "public"');
+    expect(source).not.toContain("BLOB_READ_WRITE_TOKEN");
     expect(source).not.toContain("anyone");
     expect(source).not.toContain("webViewLink");
     expect(source).not.toContain("permissions.create");
@@ -60,6 +64,7 @@ describe("server credential boundaries", () => {
       "ADMIN_PASSWORD_HASH",
       "ADMIN_SESSION_SECRET",
       "BLOB_STORE_ID",
+      "PAYMENT_SLIP_BLOB_STORE_ID",
       "VERCEL_OIDC_TOKEN",
       "SUPABASE_SERVICE_ROLE_KEY",
       "GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY",

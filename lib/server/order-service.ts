@@ -9,7 +9,7 @@ import type { Product } from "@/lib/catalog";
 import { createServerOrderId } from "./order-id";
 import { validateOrderSubmission } from "./order-validation";
 import {
-  GoogleDriveSlipStorage,
+  PaymentSlipStorageRouter,
   type PaymentSlipStorage
 } from "./payment-slip-storage";
 import { validatePaymentSlipUpload } from "./payment-slip-validation";
@@ -121,11 +121,11 @@ async function persistOrder(
   }
 
   const now = new Date();
-  const slipStorage = dependencies.slipStorage ?? new GoogleDriveSlipStorage();
+  const slipStorage = dependencies.slipStorage ?? new PaymentSlipStorageRouter();
   const persistOrder =
     dependencies.persistOrder ?? createSupabaseOrderWithItems;
   let uploadedSlipFileId: string | null = null;
-  let operation: "drive-slip-upload" | "supabase-create-order" = "drive-slip-upload";
+  let operation: "blob-slip-upload" | "supabase-create-order" = "blob-slip-upload";
 
   const order: ConfirmedOrder = {
     ...validation.order,
