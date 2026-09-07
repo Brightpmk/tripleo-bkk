@@ -1,7 +1,7 @@
-# Google Drive OAuth Setup
+# Historical Google Drive OAuth Setup
 
-Use this process once to authorize the store owner's Google account for payment
-slip uploads. Customers never see this flow.
+New payment slips use private Vercel Blob. Keep this setup only while historical
+unprefixed Drive references still need to be viewed or deleted by admins.
 
 ## Google Cloud
 
@@ -28,7 +28,5 @@ The app requests `https://www.googleapis.com/auth/drive.file` so it can create
 and manage files it creates for payment slips without requesting full Drive
 access.
 
-## Drive Folder
-
-Create `KingGallery Payment Slips` in the owner's My Drive and set:
-`GOOGLE_DRIVE_SLIP_FOLDER_ID` to that folder ID.
+The historical reader uses each stored Drive file ID directly, so the old folder
+ID is no longer required.

@@ -9,8 +9,9 @@ again before reading request bodies or contacting Supabase or Vercel Blob.
 The credential boundaries are:
 
 - Supabase service role for products, orders, and order items.
-- Google Drive OAuth for private payment slips.
-- Vercel Blob OIDC for product images.
+- Vercel Blob OIDC for private payment slips and public product images in
+  separate stores.
+- Google Drive OAuth only for historical slip reads during the transition.
 - bcrypt password hash plus encrypted `iron-session` cookie for admin access.
 
 Google Sheets is no longer used by product/order runtime code. It remains only
@@ -83,13 +84,10 @@ Required production variables:
 ```text
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
-GOOGLE_DRIVE_CLIENT_ID=
-GOOGLE_DRIVE_CLIENT_SECRET=
-GOOGLE_DRIVE_REFRESH_TOKEN=
-GOOGLE_DRIVE_SLIP_FOLDER_ID=
 ADMIN_PASSWORD_HASH=
 ADMIN_SESSION_SECRET=
 BLOB_STORE_ID=
+PAYMENT_SLIP_BLOB_STORE_ID=
 ```
 
 Optional migration/recovery variables:
@@ -101,6 +99,9 @@ GOOGLE_ORDER_ITEMS_RANGE=
 GOOGLE_PRODUCTS_RANGE=
 GOOGLE_SERVICE_ACCOUNT_EMAIL=
 GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY=
+GOOGLE_DRIVE_CLIENT_ID=
+GOOGLE_DRIVE_CLIENT_SECRET=
+GOOGLE_DRIVE_REFRESH_TOKEN=
 ```
 
 ## Local Setup

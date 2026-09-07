@@ -158,7 +158,7 @@ describe("permanent order deletion", () => {
 /* ── Slip cleanup ───────────────────────────────────────────────── */
 
 describe("payment slip cleanup", () => {
-  it("deletes the Drive slip only after the database commits", async () => {
+  it("deletes the stored slip only after the database commits", async () => {
     const order: string[] = [];
     const repository = repo({
       deleteOrder: vi.fn(async () => {
@@ -189,7 +189,7 @@ describe("payment slip cleanup", () => {
     ["no slip", null],
     ["a blank slip id", ""],
     ["a whitespace-only slip id", "   "]
-  ])("skips Drive cleanup for %s", async (_label, slipFileId) => {
+  ])("skips slip cleanup for %s", async (_label, slipFileId) => {
     const deleteSlip = vi.fn();
     const repository = repo({}, { orderId: ORDER_ID, slipFileId, deletedItemCount: 1 });
 
@@ -199,7 +199,7 @@ describe("payment slip cleanup", () => {
     expect(deleteSlip).not.toHaveBeenCalled();
   });
 
-  it("keeps the deletion successful when Drive cleanup fails", async () => {
+  it("keeps the deletion successful when storage cleanup fails", async () => {
     const result = await deleteAdminOrder(ORDER_ID, {
       repository: repo(),
       deleteSlip: vi.fn(async () => {

@@ -1,6 +1,6 @@
 import "server-only";
 
-type PersistenceOperation = "drive-slip-upload" | "supabase-create-order";
+type PersistenceOperation = "blob-slip-upload" | "supabase-create-order";
 
 function record(value: unknown): Record<string, unknown> {
   return value !== null && typeof value === "object"
@@ -13,15 +13,10 @@ export function orderPersistenceDiagnostics(
   operation: PersistenceOperation
 ) {
   const source = record(error);
-  if (operation === "drive-slip-upload") {
-    const response = record(source.response);
-    const data = record(response.data);
+  if (operation === "blob-slip-upload") {
     return {
       operation,
-      ...(data.error === "invalid_grant"
-        ? { code: "invalid_grant", message: "Google Drive OAuth refresh rejected." }
-        : { message: "Google Drive slip upload failed." }),
-      ...(typeof response.status === "number" ? { status: response.status } : {})
+      message: "Private Blob payment slip upload failed."
     };
   }
 

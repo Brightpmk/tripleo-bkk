@@ -18,20 +18,20 @@ describe("order persistence diagnostics", () => {
     });
   });
 
-  it("identifies OAuth rejection without logging request credentials", () => {
+  it("identifies Blob upload failure without logging provider details", () => {
     expect(orderPersistenceDiagnostics({
-      response: { status: 400, data: { error: "invalid_grant", error_description: "private" } },
-      config: { data: "refresh_token=secret" }
-    }, "drive-slip-upload")).toEqual({
-      operation: "drive-slip-upload", code: "invalid_grant",
-      message: "Google Drive OAuth refresh rejected.", status: 400
+      message: "private provider detail",
+      token: "secret"
+    }, "blob-slip-upload")).toEqual({
+      operation: "blob-slip-upload",
+      message: "Private Blob payment slip upload failed."
     });
   });
 
   it("discards arbitrary errors and malformed codes", () => {
     expect(orderPersistenceDiagnostics({ code: "private-secret", message: "private" }, "supabase-create-order"))
       .toEqual({ operation: "supabase-create-order", message: "Supabase order persistence failed." });
-    expect(orderPersistenceDiagnostics(null, "drive-slip-upload"))
-      .toEqual({ operation: "drive-slip-upload", message: "Google Drive slip upload failed." });
+    expect(orderPersistenceDiagnostics(null, "blob-slip-upload"))
+      .toEqual({ operation: "blob-slip-upload", message: "Private Blob payment slip upload failed." });
   });
 });

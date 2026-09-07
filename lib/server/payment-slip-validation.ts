@@ -1,3 +1,6 @@
+import "server-only";
+
+import sharp from "sharp";
 import {
   acceptedSlipMimeTypes,
   MAX_SLIP_FILE_SIZE_BYTES
@@ -42,6 +45,20 @@ export async function validatePaymentSlipUpload(
   const detected = detectImageType(buffer);
 
   if (!detected || detected.mimeType !== file.type) {
+    return {
+      ok: false,
+      message: "ไม่สามารถตรวจสอบไฟล์สลิปนี้ได้ กรุณาเลือกรูปใหม่"
+    };
+  }
+
+  try {
+    const metadata = await sharp(buffer, { failOn: "error" }).metadata();
+    const expectedFormat = detected.extension === "jpg" ? "jpeg" : detected.extension;
+
+    if (metadata.format !== expectedFormat || !metadata.width || !metadata.height) {
+      throw new Error("Unexpected image metadata.");
+    }
+  } catch {
     return {
       ok: false,
       message: "ไม่สามารถตรวจสอบไฟล์สลิปนี้ได้ กรุณาเลือกรูปใหม่"

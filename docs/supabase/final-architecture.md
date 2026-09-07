@@ -10,8 +10,8 @@ Runtime ownership:
 - Products: Supabase `public.products`
 - Orders: Supabase `public.orders`
 - Order items: Supabase `public.order_items`
-- Payment slips: private files in the configured Google Drive folder
-- Product images: Vercel Blob
+- Payment slips: private Vercel Blob objects, with transitional Drive reads
+- Product images: public Vercel Blob objects in a separate store
 - Admin auth: server-only bcrypt hash plus encrypted `iron-session` cookie
 
 Google Sheets is not read or written by the application runtime.
@@ -49,13 +49,10 @@ Required production variables:
 ```text
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
-GOOGLE_DRIVE_CLIENT_ID
-GOOGLE_DRIVE_CLIENT_SECRET
-GOOGLE_DRIVE_REFRESH_TOKEN
-GOOGLE_DRIVE_SLIP_FOLDER_ID
 ADMIN_PASSWORD_HASH
 ADMIN_SESSION_SECRET
 BLOB_STORE_ID
+PAYMENT_SLIP_BLOB_STORE_ID
 ```
 
 Safe to remove from Vercel production runtime after this phase:
@@ -71,6 +68,9 @@ GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
 
 Keep those Google Sheets variables only in local or restricted environments
 where `npm run supabase:import:*` or `npm run supabase:verify` will be used.
+
+Drive OAuth variables are optional during the historical-slip transition. See
+`docs/payment-slip-blob-migration.md` before removing them.
 
 ## Supabase Security
 
@@ -109,8 +109,8 @@ Recommended rollback procedure:
 1. Revert to the previous known-good deployment or commit.
 2. Restore the Google Sheets variables in that rollback environment.
 3. Leave Supabase data untouched for analysis.
-4. Smoke test checkout, admin orders, product management, tracking, Drive slip
-   upload, and Blob image handling.
+4. Smoke test checkout, admin orders, product management, tracking, private slip
+   upload, and public product image handling.
 
 ## Validation
 
