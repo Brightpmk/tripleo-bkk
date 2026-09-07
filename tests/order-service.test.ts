@@ -90,6 +90,9 @@ describe("order service slip persistence", () => {
 
     expect(result.ok).toBe(false);
     expect(persistOrder).not.toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith("Order persistence failed", expect.objectContaining({
+      operation: "drive-slip-upload"
+    }));
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain("customer-slip");
     consoleError.mockRestore();
   });
@@ -111,6 +114,9 @@ describe("order service slip persistence", () => {
 
     expect(result.ok).toBe(false);
     expect(deleteSlip).toHaveBeenCalledWith("drive-file-456");
+    expect(consoleError).toHaveBeenCalledWith("Order persistence failed", expect.objectContaining({
+      operation: "supabase-create-order"
+    }));
     expect(JSON.stringify(consoleError.mock.calls)).not.toContain("customer-slip");
     consoleError.mockRestore();
   });

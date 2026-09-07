@@ -16,6 +16,7 @@ import { validatePaymentSlipUpload } from "./payment-slip-validation";
 import { getCachedProductCatalog } from "./product-catalog";
 import { createSupabaseOrderWithItems } from "./supabase/order-repository";
 import { createPhaseTimer, logOrderTiming } from "./timing";
+import { orderPersistenceDiagnostics } from "./order-persistence-diagnostics";
 
 const recentSubmissions = new Map<string, Promise<OrderSubmissionResult>>();
 const SUBMISSION_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -124,6 +125,7 @@ async function persistOrder(
   const persistOrder =
     dependencies.persistOrder ?? createSupabaseOrderWithItems;
   let uploadedSlipFileId: string | null = null;
+  let operation: "drive-slip-upload" | "supabase-create-order" = "drive-slip-upload";
 
   const order: ConfirmedOrder = {
     ...validation.order,
@@ -142,6 +144,7 @@ async function persistOrder(
       })
     );
     uploadedSlipFileId = uploadedSlip.fileId;
+    operation = "supabase-create-order";
 
     await timer.track(
       "orderWriteMs",
@@ -165,7 +168,7 @@ async function persistOrder(
 
     console.error("Order persistence failed", {
       orderId: order.orderId,
-      errorName: error instanceof Error ? error.name : "UnknownError"
+      ...orderPersistenceDiagnostics(error, operation)
     });
     logOrderTiming(timer, {
       orderId: order.orderId,
