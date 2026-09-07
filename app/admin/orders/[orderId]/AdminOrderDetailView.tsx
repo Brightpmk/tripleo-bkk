@@ -643,9 +643,8 @@ function CopyButton({
 
   return (
     <button
-      className={`admin-button admin-button-secondary admin-button-sm${
-        subtle ? " admin-button-quiet" : ""
-      }`}
+      className={`admin-button admin-button-secondary admin-button-sm${subtle ? " admin-button-quiet" : ""
+        }`}
       type="button"
       onClick={async () => {
         try {

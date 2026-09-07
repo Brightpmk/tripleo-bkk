@@ -115,6 +115,7 @@ export function validateTrackingQuery(
 /* ── Public DTO ─────────────────────────────────────────────────── */
 
 export type PublicTrackedItem = {
+  productId?: string;
   shirtColor: string;
   size: string;
   quantity: number;

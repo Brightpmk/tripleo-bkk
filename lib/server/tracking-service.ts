@@ -109,6 +109,7 @@ export function toPublicTrackedOrder(
     placedAtIso: order.createdAtIso,
     universityBrand: order.universityLabel,
     items: order.items.map((item) => ({
+      productId: item.productId || "",
       shirtColor: item.shirtColor,
       size: item.size,
       quantity: item.quantity

@@ -194,12 +194,12 @@ describe("tracking search", () => {
 /* ── Items ──────────────────────────────────────────────────────── */
 
 describe("tracked order items", () => {
-  it("returns a single item with its quantity", async () => {
+  it("returns a single item with its quantity and product id", async () => {
     const result = await search("phone", "0812345678", [order()]);
     const tracked = result.ok ? result.orders[0] : null;
 
     expect(tracked?.items).toEqual([
-      { shirtColor: "Matcha", size: "M", quantity: 2 }
+      { productId: "kg-bm-matcha", shirtColor: "Matcha", size: "M", quantity: 2 }
     ]);
   });
 
@@ -232,16 +232,20 @@ describe("tracked order items", () => {
     const tracked = result.ok ? result.orders[0] : null;
 
     expect(tracked?.items).toHaveLength(2);
+    expect(tracked?.items[0].productId).toBe("p1");
+    expect(tracked?.items[1].productId).toBe("p2");
     expect(tracked?.items[1].quantity).toBe(3);
     expect(tracked?.itemCount).toBe(5);
   });
 
-  it("never exposes item prices to the public DTO", async () => {
+  it("never exposes item prices or internal item IDs to the public DTO", async () => {
     const result = await search("phone", "0812345678", [order()]);
     const item = result.ok ? result.orders[0].items[0] : null;
 
     expect(item).not.toHaveProperty("unitPriceThb");
     expect(item).not.toHaveProperty("lineTotalThb");
+    expect(item).not.toHaveProperty("itemId");
+    expect(item?.productId).toBe("kg-bm-matcha");
   });
 });
 

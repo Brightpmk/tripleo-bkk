@@ -291,8 +291,31 @@ function TrackedOrderCard({ order }: { order: PublicTrackedOrder }) {
         ) : (
           <ul className="track-item-list">
             {order.items.map((item, index) => (
-              <li className="track-item" key={`${item.shirtColor}-${item.size}-${index}`}>
-                <span className="track-item-name">{item.shirtColor || "—"}</span>
+              <li
+                className="track-item"
+                key={`${item.productId || ""}-${item.shirtColor}-${item.size}-${index}`}
+              >
+                <div className="track-item-main">
+                  <span className="track-item-name">
+                    {item.shirtColor || item.productId || "—"}
+                  </span>
+                  {item.productId ? (
+                    <div className="track-item-product-id">
+                      <span className="track-item-product-id-label">
+                        Product ID:
+                      </span>
+                      <Link
+                        href={`/products/${encodeURIComponent(item.productId)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="track-item-product-id-link"
+                        title="ดูหน้ารายละเอียดสินค้า"
+                      >
+                        {item.productId}
+                      </Link>
+                    </div>
+                  ) : null}
+                </div>
                 <span className="track-item-meta">
                   ไซส์ {item.size || "—"} · จำนวน {item.quantity} ชิ้น
                 </span>
