@@ -40,6 +40,7 @@ import {
 } from "@/lib/pricing";
 import { acceptedSlipMimeTypes, validateSlipFile } from "@/lib/slip";
 import { formatBytes, optimizeSlipImage } from "@/lib/slip-image";
+import { SizeChartModal } from "./SizeChartModal";
 import {
   getSizeSurchargeThb,
   getUnitPriceThbForSize,
@@ -679,6 +680,9 @@ function ShopSection({
         <div className="section-head-text">
           <p className="eyebrow">{university.brand}</p>
           <h2 className="display-lg">The <span className="serif-accent">Collection</span></h2>
+        </div>
+        <div className="section-head-actions">
+          <SizeChartModal />
         </div>
       </div>
 

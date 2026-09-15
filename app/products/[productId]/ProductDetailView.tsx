@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useCart } from "@/components/CartProvider";
 import { ProductGallery } from "@/components/ProductGallery";
+import { SizeChartModal } from "@/components/SizeChartModal";
 import { addCartItem, getCartTotalQuantity } from "@/lib/cart";
 import { getShopPath, getUniversityById, type Product } from "@/lib/catalog";
 import { formatThb } from "@/lib/format";
@@ -119,7 +120,10 @@ export function ProductDetailView({ product }: { product: Product }) {
                 <span className="size-field-label" id="detail-size-label">
                   Size
                 </span>
-                <span className="size-field-value">{size}</span>
+                <div className="size-field-tools">
+                  <span className="size-field-value">{size}</span>
+                  <SizeChartModal className="is-inline" />
+                </div>
               </div>
               <div
                 className="size-list"
