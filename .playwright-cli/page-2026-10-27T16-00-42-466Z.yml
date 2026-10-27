@@ -1,0 +1,12 @@
+- generic [ref=e1]:
+  - main [ref=e2]:
+    - region [ref=e3]:
+      - generic [aria-hidden] [ref=e4]: T
+      - paragraph [ref=e5]: Tripleo.bkk
+      - heading "Staff sign in" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Enter the store password to manage the product catalog.
+      - generic [ref=e8]:
+        - generic [ref=e9]: Password
+        - textbox "Password" [active] [ref=e10]
+        - button "Sign in" [disabled] [ref=e11]
+  - alert [ref=e12]

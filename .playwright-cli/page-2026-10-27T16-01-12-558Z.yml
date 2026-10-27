@@ -1,0 +1,14 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - region [ref=e3]:
+      - generic [aria-hidden] [ref=e4]: T
+      - paragraph [ref=e5]: Tripleo.bkk
+      - heading "Staff sign in" [level=1] [ref=e6]
+      - paragraph [ref=e7]: Enter the store password to manage the product catalog.
+      - generic [ref=e8]:
+        - generic [ref=e9]: Password
+        - textbox "Password" [ref=e10]: local-data-view-check-2026
+        - alert [ref=e22]: Unable to sign in.
+        - button "Sign in" [ref=e11] [cursor=pointer]
+  - button "Open Next.js Dev Tools" [ref=e18] [cursor=pointer]
+  - alert [ref=e12]

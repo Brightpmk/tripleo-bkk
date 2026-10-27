@@ -1,0 +1,47 @@
+.admin-data-content { max-width: 1600px; }
+.admin-data-content, .admin-data-content button, .admin-data-content input { letter-spacing: 0; }
+.admin-data-toolbar, .admin-data-actions, .admin-data-title, .admin-data-filters,
+.admin-data-pagination, .admin-data-page-controls, .admin-data-page-size { display: flex; align-items: center; gap: 12px; }
+.admin-data-toolbar, .admin-data-filters, .admin-data-pagination { justify-content: space-between; flex-wrap: wrap; }
+.admin-data-toolbar { margin-bottom: 24px; }
+.admin-data-title h2 { margin: 0; font-size: 1.125rem; }
+.admin-data-title > svg { color: var(--ok); }
+.admin-data-icon { width: 46px; padding: 0; flex: 0 0 46px; }
+.admin-data-tabs { display: flex; overflow-x: auto; border-bottom: 1px solid var(--line-strong); gap: 4px; }
+.admin-data-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto; min-height: 48px; padding: 10px 16px; border: 0; border-bottom: 2px solid transparent; color: var(--ink-2); background: transparent; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+.admin-data-tabs button[aria-selected="true"] { color: var(--ink); background: var(--surface-2); border-bottom-color: var(--ok); }
+.admin-data-tabs span { color: var(--ink-2); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.admin-data-filters { padding-block: 16px; }
+.admin-data-search { display: flex; align-items: center; gap: 10px; padding-inline: 12px; flex: 1; max-width: 420px; min-width: 180px; border: 1px solid var(--line-strong); background: var(--surface); border-radius: 6px; color: var(--ink-2); }
+.admin-data-search input { width: 100%; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--ink); font-size: 16px; }
+.admin-data-page-size { font-size: .8125rem; color: var(--ink-2); }
+.admin-data-page-size select { min-height: 44px; padding: 8px; color: var(--ink); background: var(--surface); border: 1px solid var(--line-strong); border-radius: 6px; font-size: 16px; }
+.admin-data-grid { max-width: 100%; max-height: 62dvh; min-height: 180px; overflow: auto; border: 1px solid var(--line-strong); scrollbar-color: var(--line-bright) var(--surface); }
+.admin-data-grid table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; font-size: .8125rem; }
+.admin-data-grid th, .admin-data-grid td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 10px 12px; vertical-align: top; text-align: left; }
+.admin-data-grid thead th { position: sticky; top: 0; z-index: 2; padding: 0; background: var(--surface-3); box-shadow: 0 1px 0 var(--line-strong); }
+.admin-data-grid thead button { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 44px; width: 100%; padding: 10px 12px; background: transparent; color: var(--ink); border: 0; font-size: .75rem; font-weight: 700; text-align: left; cursor: pointer; white-space: nowrap; }
+.admin-data-grid thead button svg { flex-shrink: 0; color: var(--ink-2); }
+.admin-data-grid tbody tr { background: var(--surface); }
+.admin-data-grid tbody tr:nth-child(even) { background: var(--bg); }
+.admin-data-grid tbody tr:hover { background: var(--surface-2); }
+.admin-data-grid .admin-data-row-number { position: sticky; left: 0; min-width: 48px; text-align: right; color: var(--ink-2); background: var(--surface-2); font-weight: 400; font-variant-numeric: tabular-nums; z-index: 1; }
+.admin-data-grid thead .admin-data-row-number { z-index: 3; padding: 12px; background: var(--surface-3); }
+.admin-data-grid td div { max-width: 48ch; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.admin-data-grid .admin-data-numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.admin-data-grid .admin-data-empty { padding: 40px 20px; color: var(--ink-2); }
+.admin-data-pagination { margin-top: 12px; font-size: .8125rem; color: var(--ink-2); }
+.admin-data-pagination p { margin: 0; }
+.admin-data-page-controls span { min-width: 60px; text-align: center; font-variant-numeric: tabular-nums; }
+.admin-data-updated, .admin-data-status { color: var(--ink-2); font-size: .75rem; margin-top: 12px; }
+.admin-data-spinning { animation: admin-data-spin 1s linear infinite; }
+@keyframes admin-data-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .admin-data-spinning { animation: none; } }
+@media (max-width: 480px) {
+  .admin-data-toolbar { align-items: stretch; gap: 16px; }
+  .admin-data-actions { width: 100%; }
+  .admin-data-actions > .admin-button-primary { flex: 1; }
+  .admin-data-search { max-width: none; }
+  .admin-data-pagination { justify-content: center; }
+  .admin-data-pagination p { width: 100%; text-align: center; }
+}
